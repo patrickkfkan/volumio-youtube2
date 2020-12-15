@@ -1,0 +1,30 @@
+{
+  "name": "youtube2",
+  "version": "0.1.0a",
+  "description": "Youtube2 plugin for Volumio",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Patrick Kan",
+  "license": "GPL-3.0",
+  "volumio_info": {
+    "prettyName": "Youtube2",
+    "plugin_type": "music_service",
+    "icon": "fa-youtube",
+    "boot_priority": 10
+  },
+  "dependencies": {
+    "googleapis": "^45.0.0",
+    "kew": "^0.7.0",
+    "md5": "^2.3.0",
+    "node-cache": "^5.1.2",
+    "request": "^2.88.2",
+    "string-format": "^2.0.0",
+    "v-conf": "^1.4.2",
+    "youtube-scrape": "github:patrickkfkan/youtube-scrape",
+    "yt-channel-info": "github:patrickkfkan/yt-channel-info#wip-topic-gaming-channels",
+    "ytdl-core": "^4.1.4",
+    "ytpl": "^2.0.1"
+  }
+}
