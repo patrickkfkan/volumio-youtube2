@@ -158,7 +158,7 @@ ControllerYouTube2.prototype.configSaveDataRetrieval = function(data) {
     yt2.toast('success', yt2.getI18n('YOUTUBE2_SETTINGS_SAVED'));
 
     if (oldMethod !== newMethod) {
-        this.refreshUIConfig();
+        this.refreshUIConfig(true);
     }
 }
 
@@ -204,7 +204,7 @@ ControllerYouTube2.prototype.configAddFrontPageSection = function(data) {
     this.config.set('frontPageSections', JSON.stringify(sections));
 
     yt2.toast('success', yt2.getI18n('YOUTUBE2_SECTION_ADDED'));
-    this.refreshUIConfig();
+    this.refreshUIConfig(true);
 }
 
 ControllerYouTube2.prototype.configUpdateFrontPageSection = function(data) {
@@ -243,15 +243,22 @@ ControllerYouTube2.prototype.configRemoveFrontPageSection = function(index) {
     this.config.set('frontPageSections', JSON.stringify(sections));
 
     yt2.toast('success', yt2.getI18n('YOUTUBE2_SECTION_REMOVED'));
-    this.refreshUIConfig();
+    this.refreshUIConfig(true);
 }
 
-ControllerYouTube2.prototype.refreshUIConfig = function() {
+ControllerYouTube2.prototype.refreshUIConfig = function(sectionsChanged) {
     let self = this;
     
-    self.commandRouter.getUIConfigOnPlugin('music_service', 'youtube2', {}).then( (config) => {
-        self.commandRouter.broadcastMessage('pushUiConfig', config);
-    });
+    if (sectionsChanged) { // section added or removed
+        // 'pushUiConfig' does not work properly when sections are added or removed
+        // (some fields will display the wrong values). Reload UI instead.
+        self.commandRouter.reloadUi();
+    }
+    else {
+        self.commandRouter.getUIConfigOnPlugin('music_service', 'youtube2', {}).then( (config) => {
+            self.commandRouter.broadcastMessage('pushUiConfig', config);
+        });
+    }
 }
 
 ControllerYouTube2.prototype.onVolumioStart = function() {
