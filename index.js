@@ -32,11 +32,12 @@ ControllerYouTube2.prototype.getUIConfig = function() {
         let dataRetrievalUIConf= uiconf.sections[0];
         let gapiStatusUIConf = uiconf.sections[1];
         let navUIConf = uiconf.sections[2];
-        let addFrontPageSectionUIConf = uiconf.sections[3];
+        let playbackUIConf = uiconf.sections[3];
+        let addFrontPageSectionUIConf = uiconf.sections[4];
 
         // Remove addFrontPageSectionUIConf (will add it back after all current
         // front page sections)
-        uiconf.sections.splice(3, 1);
+        uiconf.sections.splice(4, 1);
 
         // Data Retrieval section
         let method = yt2.getConfigValue('dataRetrievalMethod', 'scraping');
@@ -108,6 +109,10 @@ ControllerYouTube2.prototype.getUIConfig = function() {
         navUIConf.content[0].value = itemsPerPage;
         navUIConf.content[1].value = combinedSearchResults;
 
+        // Playback section
+        let autoplay = yt2.getConfigValue('autoplay', false);
+        playbackUIConf.content[0].value = autoplay;
+
         // Remove Google YouTube API Client Status section?
         if (removeAccessUIConf) {
             uiconf.sections.splice(1, 1);
@@ -177,6 +182,11 @@ ControllerYouTube2.prototype.configSaveNav = function(data) {
     this.config.set('itemsPerPage', itemsPerPage);
     this.config.set('combinedSearchResults', combinedSearchResults);
     yt2.toast('success', yt2.getI18n('YOUTUBE2_SETTINGS_SAVED'));   
+}
+
+ControllerYouTube2.prototype.configSavePlayback = function(data) {
+    this.config.set('autoplay', data['autoplay']);
+    yt2.toast('success', yt2.getI18n('YOUTUBE2_SETTINGS_SAVED'));
 }
 
 ControllerYouTube2.prototype.configAddFrontPageSection = function(data) {

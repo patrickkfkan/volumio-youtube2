@@ -125,6 +125,32 @@
       ]
     },
     {
+      "id": "section_playback",
+      "element": "section",
+      "label": "TRANSLATE.YOUTUBE2_SECTION_PLAYBACK",
+      "icon": "fa-play-circle",
+      "onSave": {
+        "type": "controller",
+        "endpoint": "music_service/youtube2",
+        "method": "configSavePlayback"
+      },
+      "saveButton": {
+        "label": "TRANSLATE.YOUTUBE2_SAVE",
+        "data": [
+          "autoplay"
+        ]
+      },
+      "content": [
+        {
+          "id": "autoplay",
+          "element": "switch",
+          "label": "TRANSLATE.YOUTUBE2_AUTOPLAY",
+          "doc": "TRANSLATE.YOUTUBE2_DOC_AUTOPLAY",
+          "value": false
+        }
+      ]
+    },
+    {
       "id": "section_add_front_page_section",
       "element": "section",
       "label": "TRANSLATE.YOUTUBE2_SECTION_ADD_FRONT_PAGE_SECTION",

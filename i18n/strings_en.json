@@ -21,6 +21,9 @@
   "YOUTUBE2_SECTION_NAV": "Navigation",
   "YOUTUBE2_ITEMS_PER_PAGE": "Items per page",
   "YOUTUBE2_COMBINED_SEARCH_RESULTS": "Item count in combined search results (per type)",
+  "YOUTUBE2_SECTION_PLAYBACK": "Playback",
+  "YOUTUBE2_AUTOPLAY": "Autoplay",
+  "YOUTUBE2_DOC_AUTOPLAY": "(Experimental) Autoplay 'Up Next' videos when a YouTube track finishes playing and there are no further tracks in the queue. Only works when Repeat and Random playback modes are off.",
   "YOUTUBE2_SECTION_ADD_FRONT_PAGE_SECTION": "Add a section to the front page",
   "YOUTUBE2_FRONT_PAGE_SECTION": "Front page section: {}",
   "YOUTUBE2_ADD": "Add",
@@ -58,5 +61,6 @@
   "YOUTUBE2_LIST_TITLE_VIDEOS_MATCHING": "Videos matching '{}'",
   "YOUTUBE2_LIST_TITLE_SEARCH_RESULTS_CHANNELS": "YouTube Channels",
   "YOUTUBE2_LIST_TITLE_SEARCH_RESULTS_PLAYLISTS": "YouTube Playlists",
-  "YOUTUBE2_LIST_TITLE_SEARCH_RESULTS_VIDEOS": "YouTube Videos"
+  "YOUTUBE2_LIST_TITLE_SEARCH_RESULTS_VIDEOS": "YouTube Videos",
+  "YOUTUBE2_VIDEO_TITLE_AUTOPLAY": "<span style='color: #debe19;'>(YouTube Autoplay)</span> {}"
 }
