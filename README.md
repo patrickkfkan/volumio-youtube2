@@ -101,6 +101,10 @@ The plugin uses the following libraries for obtaining data through scraping (cre
 
 ### Changelog
 
+0.1.0a-20201222:
+- [Added] Autoplay (experimental)
+- [Added] Cache settings
+
 0.1.0a-20201219:
 - [Fixed] Volumio playlist items added from queue cannot be played
 
