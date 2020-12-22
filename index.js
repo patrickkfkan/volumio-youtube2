@@ -33,11 +33,12 @@ ControllerYouTube2.prototype.getUIConfig = function() {
         let gapiStatusUIConf = uiconf.sections[1];
         let navUIConf = uiconf.sections[2];
         let playbackUIConf = uiconf.sections[3];
-        let addFrontPageSectionUIConf = uiconf.sections[4];
+        let cacheUIConf = uiconf.sections[4];
+        let addFrontPageSectionUIConf = uiconf.sections[5];
 
         // Remove addFrontPageSectionUIConf (will add it back after all current
         // front page sections)
-        uiconf.sections.splice(4, 1);
+        uiconf.sections.splice(5, 1);
 
         // Data Retrieval section
         let method = yt2.getConfigValue('dataRetrievalMethod', 'scraping');
@@ -113,6 +114,14 @@ ControllerYouTube2.prototype.getUIConfig = function() {
         let autoplay = yt2.getConfigValue('autoplay', false);
         playbackUIConf.content[0].value = autoplay;
 
+        // Cache section
+        let cacheMaxEntries = yt2.getConfigValue('cacheMaxEntries', 5000);
+        let cacheTTL = yt2.getConfigValue('cacheTTL', 1800);
+        let cacheEntryCount = yt2.getCache().getEntryCount();
+        cacheUIConf.content[0].value = cacheMaxEntries;
+        cacheUIConf.content[1].value = cacheTTL;
+        cacheUIConf.description = cacheEntryCount > 0 ? yt2.getI18n('YOUTUBE2_CACHE_STATS', cacheEntryCount, Math.round(yt2.getCache().getMemoryUsageInKB()).toLocaleString()) : yt2.getI18n('YOUTUBE2_CACHE_EMPTY');
+
         // Remove Google YouTube API Client Status section?
         if (removeAccessUIConf) {
             uiconf.sections.splice(1, 1);
@@ -187,6 +196,34 @@ ControllerYouTube2.prototype.configSaveNav = function(data) {
 ControllerYouTube2.prototype.configSavePlayback = function(data) {
     this.config.set('autoplay', data['autoplay']);
     yt2.toast('success', yt2.getI18n('YOUTUBE2_SETTINGS_SAVED'));
+}
+
+ControllerYouTube2.prototype.configSaveCacheSettings = function(data) {
+    let cacheMaxEntries = parseInt(data['cacheMaxEntries'], 10);
+    let cacheTTL = parseInt(data['cacheTTL'], 10);
+    if (cacheMaxEntries < 1000) {
+        yt2.toast('error', yt2.getI18n('YOUTUBE2_SETTINGS_ERR_CACHE_MAX_ENTRIES'));
+        return;
+    }
+    if (cacheTTL < 600) {
+        yt2.toast('error', yt2.getI18n('YOUTUBE2_SETTINGS_ERR_CACHE_TTL'));
+        return;
+    }
+
+    this.config.set('cacheMaxEntries', cacheMaxEntries);
+    this.config.set('cacheTTL', cacheTTL);
+
+    yt2.getCache().setMaxEntries(cacheMaxEntries);
+    yt2.getCache().setTTL(cacheTTL);
+
+    yt2.toast('success', yt2.getI18n('YOUTUBE2_SETTINGS_SAVED'));
+    this.refreshUIConfig();
+}
+
+ControllerYouTube2.prototype.configClearCache = function() {
+    yt2.getCache().clear();
+    yt2.toast('success', yt2.getI18n('YOUTUBE2_CACHE_CLEARED'));
+    this.refreshUIConfig();
 }
 
 ControllerYouTube2.prototype.configAddFrontPageSection = function(data) {

@@ -151,6 +151,53 @@
       ]
     },
     {
+      "id": "section_cache",
+      "element": "section",
+      "label": "TRANSLATE.YOUTUBE2_SECTION_CACHE",
+      "icon": "fa-hdd-o",
+      "onSave": {
+        "type": "controller",
+        "endpoint": "music_service/youtube2",
+        "method": "configSaveCacheSettings"
+      },
+      "saveButton": {
+        "label": "TRANSLATE.YOUTUBE2_SAVE",
+        "data": [
+          "cacheMaxEntries",
+          "cacheTTL"
+        ]
+      },
+      "content": [
+        {
+          "id": "cacheMaxEntries",
+          "type": "number",
+          "element": "input",
+          "label": "TRANSLATE.YOUTUBE2_CACHE_MAX_ENTRIES",
+          "value": 5000
+        },
+        {
+          "id": "cacheTTL",
+          "type": "number",
+          "element": "input",
+          "label": "TRANSLATE.YOUTUBE2_CACHE_TTL",
+          "value": 1800
+        },
+        {
+          "id": "clearCache",
+          "element": "button",
+          "label": "TRANSLATE.YOUTUBE2_CLEAR_CACHE",
+          "onClick": {
+              "type": "emit",
+              "message": "callMethod",
+              "data": {
+                  "endpoint": "music_service/youtube2",
+                  "method": "configClearCache"
+              }
+          }
+        }
+      ]
+    },
+    {
       "id": "section_add_front_page_section",
       "element": "section",
       "label": "TRANSLATE.YOUTUBE2_SECTION_ADD_FRONT_PAGE_SECTION",
