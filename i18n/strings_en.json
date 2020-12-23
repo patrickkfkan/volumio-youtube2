@@ -23,7 +23,7 @@
   "YOUTUBE2_COMBINED_SEARCH_RESULTS": "Item count in combined search results (per type)",
   "YOUTUBE2_SECTION_PLAYBACK": "Playback",
   "YOUTUBE2_AUTOPLAY": "Autoplay",
-  "YOUTUBE2_DOC_AUTOPLAY": "(Experimental) Autoplay 'Up Next' videos when a YouTube track finishes playing and there are no further tracks in the queue. Only works when Repeat and Random playback modes are off.",
+  "YOUTUBE2_DOC_AUTOPLAY": "(Experimental) Autoplay more videos when a YouTube track finishes playing and there are no further tracks in the queue. Only works when Repeat and Random playback modes are off.",
   "YOUTUBE2_SECTION_CACHE": "Cache",
   "YOUTUBE2_CACHE_STATS": "There are currently {} entries in cache, using approximately {} KB of memory.",
   "YOUTUBE2_CACHE_EMPTY": "Cache is currently empty.",

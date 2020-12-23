@@ -24,6 +24,7 @@
     "v-conf": "^1.4.2",
     "youtube-scrape": "github:patrickkfkan/youtube-scrape",
     "yt-channel-info": "github:patrickkfkan/yt-channel-info#wip-topic-gaming-channels",
+    "yt-mix-playlist": "github:patrickkfkan/yt-mix-playlist",
     "ytdl-core": "^4.2.1",
     "ytpl": "^2.0.1"
   }
