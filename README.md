@@ -98,8 +98,13 @@ The plugin uses the following libraries for obtaining data through scraping (cre
 |[ytpl](https://github.com/TimeForANinja/node-ytpl)               |No                                                    |Fetch playlist info and playlist videos    |
 |[yt-channel-info](https://github.com/FreeTubeApp/yt-channel-info)|[Yes](https://github.com/patrickkfkan/yt-channel-info)|Fetch channel info and channel playlists   |
 |[ytdl-core](https://www.npmjs.com/package/ytdl-core)             |No                                                    |Fetch video info and audio stream URL      |
+|[yt-mix-playlist](https://github.com/patrickkfkan/yt-mix-playlist)|N/A                                                  |Fetch Mix playlists                        |
 
 ### Changelog
+
+0.1.0a-20201225:
+- [Changed] Fetch autoplay videos from Mix playlists if available - greatly reduces chance of entering a loop. If Mix playlist not available, fetch randomly from related videos before resorting to 'Up Next'.
+- [Changed / Fixed] Added 'album' labels to videos - fixes Last 100 plugin not adding YouTube tracks.
 
 0.1.0a-20201222:
 - [Added] Autoplay (experimental)
