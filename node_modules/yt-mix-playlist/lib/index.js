@@ -2,7 +2,7 @@
  * Parts of the code based on ytpl
  * https://github.com/TimeForANinja/node-ytpl
  */
-const miniget = require('miniget');
+const request = require('request');
 const qs = require('querystring');
 const parser = require(__dirname + '/parser');
 
@@ -11,10 +11,9 @@ const BASE_WATCH_URL = 'https://www.youtube.com/watch?';
 async function getMixPlaylist(params, rt = 3) {
     if (rt === 0) throw new Error('Unable to find JSON!');
 
-    const opts = checkParams(params);
-    const url =  BASE_WATCH_URL + qs.encode(opts.query);
-    const body = await miniget(url, opts.requestOptions).text();
-    const json = parser.getJsonFromBody(body);
+    const opts = checkParams(params);   
+    const resp = await doRequest(opts);
+    const json = parser.getJsonFromBody(resp.body);
 
     // Retry if unable to find json => most likely old response
     if (!json) return getMixPlaylist(params, rt - 1);
@@ -25,19 +24,28 @@ async function getMixPlaylist(params, rt = 3) {
         if (error) throw new Error(`API-Error: ${parser.parseText(error.alertRenderer.text)}`);
     }
 
-    if (!params.playlistId) {
+    if (!opts.query.list) { // no playlistId specified
         let unexpandedPlaylist = parser.getUnexpandedPlaylistInfo(json);
         if (!unexpandedPlaylist || !unexpandedPlaylist.id) {
             return null;
         }
         else {
             let newParams = Object.assign({}, params);
-            newParams.playlistId = unexpandedPlaylist.id;
+            newParams.session = {
+                cookieJar: resp.cookieJar,
+                playlistId: unexpandedPlaylist.id
+            }
             return getMixPlaylist(newParams);
         }
     }
 
-    return parser.getExpandedPlaylistInfo(json);
+    let info = parser.getExpandedPlaylistInfo(json);
+    info.session = {
+        cookieJar: resp.cookieJar,
+        playlistId: info.id
+    };
+
+    return info;
 };
 
 function checkParams(params) {
@@ -47,27 +55,46 @@ function checkParams(params) {
     if (typeof params.videoId !== 'string') {
         throw new Error('video ID must be of type string');
     }
-    if (params.playlistId && typeof params.playlistId !== 'string') {
+    if (params.session && params.session.playlistId && typeof params.session.playlistId !== 'string') {
         throw new Error('playlist ID must be of of type string');
     }
 
-    let query = {
-        v: params.videoId,
+    let opts = {
+        query: {
+            v: params.videoId,
+        }
     };
-    if (params.playlistId) query.list = params.playlistId;
-    if (params.gl) query.gl = params.gl;
-    if (params.hl) query.hl = params.hl;
+    if (params.gl) opts.query.gl = params.gl;
+    if (params.hl) opts.query.hl = params.hl;
 
-    let requestOptions = Object.assign({}, params.requestOptions);
-    // Unlink requestOptions#headers
-    if (requestOptions.headers) {
-        requestOptions.headers = JSON.parse(JSON.stringify(requestOptions.headers));
+    if (params.session) {
+        if (params.session.playlistId) opts.query.list = params.session.playlistId;
+        if (params.session.cookieJar) opts.requestCookieJar = params.session.cookieJar;
     }
 
-    return {
-        query: query,
-        requestOptions: requestOptions
-    };
+    return opts;
 };
 
-module.exports = getMixPlaylist
+async function doRequest(opts) {
+    let requestOptions = {
+        method: 'GET', 
+        uri: BASE_WATCH_URL + qs.encode(opts.query),
+        jar: opts.requestCookieJar || request.jar()
+    };
+    return new Promise( (resolve, reject) => {
+        request(requestOptions, (error, response, body) => {
+            if (error) {
+                reject(error);
+            }
+            else {
+                resolve({
+                    response: response,
+                    body: body,
+                    cookieJar: requestOptions.jar
+                });
+            }
+        });
+    });
+}
+
+module.exports = getMixPlaylist;
