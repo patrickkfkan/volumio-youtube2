@@ -71,5 +71,8 @@
   "YOUTUBE2_LIST_TITLE_SEARCH_RESULTS_CHANNELS": "YouTube Channels",
   "YOUTUBE2_LIST_TITLE_SEARCH_RESULTS_PLAYLISTS": "YouTube Playlists",
   "YOUTUBE2_LIST_TITLE_SEARCH_RESULTS_VIDEOS": "YouTube Videos",
-  "YOUTUBE2_VIDEO_TITLE_AUTOPLAY": "<span style='color: #debe19;'>(YouTube Autoplay)</span> {}"
+  "YOUTUBE2_VIDEO_TITLE_AUTOPLAY": "<span style='color: #debe19;'>(YouTube Autoplay)</span> {}",
+  "YOUTUBE2_VIDEO_PARSER_ALBUM": "YouTube Video",
+  "YOUTUBE2_CHANNEL_PARSER_ALBUM": "YouTube Channel",
+  "YOUTUBE2_PLAYLIST_PARSER_ALBUM": "YouTube Playlist"
 }
