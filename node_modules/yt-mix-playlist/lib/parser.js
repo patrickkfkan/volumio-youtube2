@@ -72,7 +72,7 @@ function parseText(txt) {
     return txt.simpleText || txt.runs.map(a => a.text).join('');
 }
 
-function getUnexpandedPlaylistInfo(json) {
+function getCollapsedPlaylistInfo(json) {
     let results;
     try {
         results = json.contents.twoColumnWatchNextResults.secondaryResults.secondaryResults.results;
@@ -130,6 +130,7 @@ function parsePlaylistItem(data) {
         return {
             id: info.videoId,
             title: parseText(info.title),
+            author: parsePlaylistItemAuthor(info),
             url: URL.resolve(BASE_URL, info.navigationEndpoint.commandMetadata.webCommandMetadata.url),
             selected: info.selected,
             duration: parseText(info.lengthText),
@@ -137,6 +138,14 @@ function parsePlaylistItem(data) {
         }
     }
     return null;
+}
+
+function parsePlaylistItemAuthor(data) {
+    return {
+        name: parseText(data.shortBylineText),
+        channelId: data.shortBylineText.runs[0].navigationEndpoint.browseEndpoint.browseId,
+        url: URL.resolve(BASE_URL, data.shortBylineText.runs[0].navigationEndpoint.browseEndpoint.canonicalBaseUrl)
+    }
 }
 
 function prepImg(img) {
@@ -147,8 +156,8 @@ function prepImg(img) {
 };
 
 module.exports = {
-    getJsonFromBody: getJsonFromBody,
-    parseText: parseText,
-    getUnexpandedPlaylistInfo: getUnexpandedPlaylistInfo,
-    getExpandedPlaylistInfo: getExpandedPlaylistInfo
+    getJsonFromBody,
+    parseText,
+    getCollapsedPlaylistInfo,
+    getExpandedPlaylistInfo
 }
