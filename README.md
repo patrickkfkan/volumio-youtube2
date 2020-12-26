@@ -102,6 +102,11 @@ The plugin uses the following libraries for obtaining data through scraping (cre
 
 ### Changelog
 
+0.1.0a-20201226:
+- [Changed] Updated yt-mix-playlist
+- [Changed] Adapt to API changes in ytdl-core
+- [Fixed] Single video failing to play
+
 0.1.0a-20201225:
 - [Changed] Fetch autoplay videos from Mix playlists if available - greatly reduces chance of entering a loop. If Mix playlist not available, fetch randomly from related videos before resorting to 'Up Next'.
 - [Changed / Fixed] Added 'album' labels to videos - fixes Last 100 plugin not adding YouTube tracks.
