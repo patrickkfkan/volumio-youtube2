@@ -1,6 +1,6 @@
 {
   "name": "youtube2",
-  "version": "0.1.0a-20201226",
+  "version": "0.1.1a-20200310-wip",
   "description": "Youtube2 plugin for Volumio",
   "main": "index.js",
   "scripts": {
