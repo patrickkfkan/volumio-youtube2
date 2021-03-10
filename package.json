@@ -1,10 +1,14 @@
 {
   "name": "youtube2",
-  "version": "0.1.1a-20200310-wip",
+  "version": "0.1.1a-20200311",
   "description": "Youtube2 plugin for Volumio",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/patrickkfkan/volumio-youtube2.git"
   },
   "author": "Patrick Kan",
   "license": "GPL-3.0",

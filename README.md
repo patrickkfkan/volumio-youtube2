@@ -102,6 +102,10 @@ The plugin uses the following libraries for obtaining data through scraping (cre
 
 ### Changelog
 
+0.1.1a-20200311:
+- [Fixed] Scraping broken due to YouTube changes
+- [Fixed] Playlist videos pagination bug
+
 0.1.0a-20201226:
 - [Changed] Updated yt-mix-playlist
 - [Changed] Adapt to API changes in ytdl-core
