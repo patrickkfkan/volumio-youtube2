@@ -102,6 +102,10 @@ The plugin uses the following libraries for obtaining data through scraping (cre
 
 ### Changelog
 
+0.1.1a-20210627:
+- [Fixed] Playback broken due to YouTube changes
+- [Changed] Google API access status should now persist across future updates
+
 0.1.1a-20200311:
 - [Fixed] Scraping broken due to YouTube changes
 - [Fixed] Playlist videos pagination bug
