@@ -55,7 +55,7 @@ Data is retrieved through sending requests to the YouTube website and parsing th
 
 #### *Google YouTube API*
 
-Data is retrieved through the official Google YouTube API. You need to set up API credentials in the [Google Developers Console](https://console.developers.google.com) and provide them in the settings. Once the credentials are processed successfully, you will be able to access your subscriptions, playlists, etc. Note that you will be subject to a daily quota limit of 10,000 units that are consumed as the plugin retrieves data through the API (when you, for example, view a channel or perform a search). Once the limit is exceeded, the Google YouTube API will reject further requests for data. The number of quota units consumed will depend on the operation performed, with searches being the most costly (at 100 units per search). The plugin tries to reduce quota consumption by caching viewed items for a period of time.
+Data is retrieved through the official Google YouTube API. You need to set up API credentials in the [Google Cloud Platform](https://console.cloud.google.com/apis/dashboard) and provide them in the settings. Once the credentials are processed successfully, you will be able to access your subscriptions, playlists, etc. Note that you will be subject to a daily quota limit of 10,000 units that are consumed as the plugin retrieves data through the API (when you, for example, view a channel or perform a search). Once the limit is exceeded, the Google YouTube API will reject further requests for data. The number of quota units consumed will depend on the operation performed, with searches being the most costly (at 100 units per search). The plugin tries to reduce quota consumption by caching viewed items for a period of time.
 
 You can create API credentials with [this guide](./gapi_setup.md).
 
@@ -101,6 +101,9 @@ The plugin uses the following libraries for obtaining data through scraping (cre
 |[yt-mix-playlist](https://github.com/patrickkfkan/yt-mix-playlist)|N/A                                                  |Fetch Mix playlists                        |
 
 ### Changelog
+
+0.1.1a-20210822:
+- [Changed] Google API credentials setup guide
 
 0.1.1a-20210627:
 - [Fixed] Playback broken due to YouTube changes
