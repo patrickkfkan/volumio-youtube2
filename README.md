@@ -102,6 +102,9 @@ The plugin uses the following libraries for obtaining data through scraping (cre
 
 ### Changelog
 
+0.1.1a-20210825:
+- [Added] Show video durations
+
 0.1.1a-20210822:
 - [Changed] Google API credentials setup guide
 
