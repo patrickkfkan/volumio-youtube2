@@ -102,6 +102,10 @@ The plugin uses the following libraries for obtaining data through scraping (cre
 
 ### Changelog
 
+0.1.2
+- [Changed] More robust fetching of Mix playlists for autoplay
+- [Added] Google API Setup Guide button in plugin settings
+
 0.1.1a-20210825:
 - [Added] Show video durations
 
