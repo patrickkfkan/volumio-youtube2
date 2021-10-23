@@ -72,10 +72,15 @@ function parseText(txt) {
     return txt.simpleText || txt.runs.map(a => a.text).join('');
 }
 
-function getCollapsedPlaylistInfo(json) {
+function getCollapsedPlaylistInfo(json, isContinuation = false) {
     let results;
     try {
-        results = json.contents.twoColumnWatchNextResults.secondaryResults.secondaryResults.results;
+        if (isContinuation) {
+            results = results = json.onResponseReceivedEndpoints[0].appendContinuationItemsAction.continuationItems;
+        }
+        else {
+            results = json.contents.twoColumnWatchNextResults.secondaryResults.secondaryResults.results;
+        }
     } catch (e) {
         return null;
     }
@@ -89,9 +94,23 @@ function getCollapsedPlaylistInfo(json) {
                     title: parseText(info.title),
                     author: parseText(info.longBylineText),
                     videoCount: parseText(info.videoCountText),
-                    url: result.shareUrl,
+                    url: info.shareUrl,
                     thumbnails: prepImg(info.thumbnail.thumbnails)
                 };
+            }
+            else if (i === results.length - 1) {
+                // Reached end of results and still haven't got a mix playlist
+                // Check if last result has a continuation token
+                let continuation = result.continuationItemRenderer;
+                if (continuation) {
+                    try {
+                        return {
+                            continuation: continuation.continuationEndpoint.continuationCommand.token
+                        };
+                    } catch (e) {
+                        return null;
+                    }
+                }
             }
         }
     }
