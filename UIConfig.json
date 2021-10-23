@@ -81,6 +81,19 @@
           "label": "TRANSLATE.YOUTUBE2_REGION",
           "value": {},
           "options": []
+        },
+        {
+          "id": "gapiSetupGuide",
+          "element": "button",
+          "label": "TRANSLATE.YOUTUBE2_GAPI_SETUP_GUIDE",
+          "onClick": {
+              "type": "openUrl",
+              "url": "https://github.com/patrickkfkan/volumio-youtube2/blob/master/gapi_setup.md"
+          },
+          "visibleIf": {
+            "field": "method",
+            "value": "gapi"
+          }
         }
       ]
     },

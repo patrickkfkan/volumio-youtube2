@@ -9,6 +9,7 @@
   "YOUTUBE2_CLIENT_SECRET": "Client Secret", 
   "YOUTUBE2_LANGUAGE": "Language",
   "YOUTUBE2_REGION": "Region",
+  "YOUTUBE2_GAPI_SETUP_GUIDE": "Google API Setup Guide",
   "YOUTUBE2_SAVE": "Save",
   "YOUTUBE2_SECTION_GAPI_STATUS": "Google YouTube API Client Status",
   "YOUTUBE2_ACCESS_DESC_GRANT": "You need to grant Volumio read-only access to your YouTube account. To do this, go to the page referred to by Verification URL and enter the Code there.",
