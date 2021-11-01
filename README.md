@@ -1,49 +1,13 @@
 # YouTube2 plugin for Volumio
 
-Volumio plugin for browsing YouTube videos and playing audio streams. It has been tested on Volumio 2.834.
+Volumio plugin for browsing YouTube videos and playing audio streams.
 
-### Getting Started
+This repository has two branches:
 
-To install the plugin, first make sure you have [enabled SSH access](https://volumio.github.io/docs/User_Manual/SSH.html) on your Volumio device. Then, in a terminal:
+1. The `master` branch is targeted towards Volumio 3.
+2. The `volumio-2.x` branch is targeted towards Volumio 2.x.
 
-```
-$ ssh volumio@<your_Volumio_address>
-
-volumio:~$ mkdir youtube2-plugin
-volumio:~$ cd youtube2-plugin
-volumio:~/youtube2-plugin$ git clone https://github.com/patrickkfkan/volumio-youtube2.git
-volumio:~/youtube2-plugin$ cd volumio-youtube2
-volumio:~/youtube2-plugin/volumio-youtube2$ volumio plugin install
-
-...
-Progress: 100
-Status :Youtube2 Successfully Installed, Do you want to enable the plugin now?
-...
-
-// If the process appears to hang at this point, just press Ctrl-C to return to the terminal.
-```
-
-Now access Volumio in a web browser. Go to ``Plugins -> Installed plugins`` and enable the YouTube2 plugin by activating the switch next to it.
-
-### Updating
-
-When a new version of the plugin becomes available, you can ssh into your Volumio device and update as follows (assuming you have not deleted the directory which you cloned from this repo):
-
-```
-volumio:~$ cd ~/youtube2-plugin/volumio-youtube2/
-volumio:~/youtube2-plugin/volumio-youtube2$ git pull
-...
-volumio:~/youtube2-plugin/volumio-youtube2$ volumio plugin update
-
-This command will update the plugin on your device
-...
-Progress: 100
-Status :Successfully updated plugin
-
-// If the process appears to hang at this point, just press Ctrl-C to return to the terminal.
-
-volumio:~/youtube2-plugin/volumio-youtube2$ sudo systemctl restart volumio
-```
+The focus is on the `master` branch. The `volumio-2.x` branch will only be maintained if it is practically feasible and still worthwhile to do so.
 
 ### Plugin Settings
 
@@ -66,15 +30,6 @@ You can create API credentials with [this guide](./gapi_setup.md).
 You can add, remove or disable sections that are shown on the front page of the plugin. For each section, you can specify the type of item to display (channel, playlist or video) and the keywords to match items against.
 
 If you use Google YouTube API for data retrieval, then you should consider whether you should remove or disable front page sections completely to save quota. As previously mentioned, each search operation consumes 100 quota units. If you have three sections enabled on the front page, it would cost you 300 quota units to display them.
-
-### Playback
-
-The plugin uses [MPD](https://www.musicpd.org/) for playing a video's audio stream. The current version of Volumio still ships with a *really* outdated version of MPD that is not entirely compatible with these streams. So, while a stream will still play, you will likely encounter the following:
-
-1. Playback abruptly ends at ~3/4 into the stream.
-2. Seeking is not possible at all.
-
-Until [Volumio Buster](https://community.volumio.org/t/volumio-x86-debian-buster-debugging-party-beta/11899) is officially released (which is expected to include a recent version of MPD), here's a [temporary workaround](https://community.volumio.org/t/mpd-0-21-16-for-volumio-arm-armv7-and-x86/11554) (note: no guarantee that it will not break certain aspects of Volumio - use at own risk).
 
 ### Volumio Playlists
 
