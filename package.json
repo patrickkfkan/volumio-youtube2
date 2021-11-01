@@ -15,8 +15,13 @@
   "volumio_info": {
     "prettyName": "Youtube2",
     "plugin_type": "music_service",
+    "os": [ "buster" ],
     "icon": "fa-youtube",
     "boot_priority": 10
+  },
+  "engines": {
+    "node": ">=8",
+    "volumio": ">=3"
   },
   "dependencies": {
     "googleapis": "^45.0.0",
