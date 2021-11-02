@@ -1,6 +1,13 @@
 # YouTube2 plugin for Volumio
 
-Volumio plugin for browsing YouTube videos and playing audio streams. It has been tested on Volumio 2.834.
+Volumio plugin for browsing YouTube videos and playing audio streams.
+
+This repository has two branches:
+
+1. The `master` branch is targeted towards Volumio 3.
+2. The `volumio-2.x` branch is targeted towards Volumio 2.x.
+
+The focus is on the `master` branch. The `volumio-2.x` branch will only be maintained if it is practically feasible and still worthwhile to do so.
 
 ### Getting Started
 
@@ -9,10 +16,13 @@ To install the plugin, first make sure you have [enabled SSH access](https://vol
 ```
 $ ssh volumio@<your_Volumio_address>
 
+// You can copy and paste each line after the $ sign
+
 volumio:~$ mkdir youtube2-plugin
 volumio:~$ cd youtube2-plugin
 volumio:~/youtube2-plugin$ git clone https://github.com/patrickkfkan/volumio-youtube2.git
 volumio:~/youtube2-plugin$ cd volumio-youtube2
+volumio:~/youtube2-plugin$ git checkout volumio-2.x
 volumio:~/youtube2-plugin/volumio-youtube2$ volumio plugin install
 
 ...
@@ -30,9 +40,12 @@ Now access Volumio in a web browser. Go to ``Plugins -> Installed plugins`` and 
 When a new version of the plugin becomes available, you can ssh into your Volumio device and update as follows (assuming you have not deleted the directory which you cloned from this repo):
 
 ```
+// You can copy and paste each line after the $ sign
+
 volumio:~$ cd ~/youtube2-plugin/volumio-youtube2/
 volumio:~/youtube2-plugin/volumio-youtube2$ git pull
 ...
+volumio:~/youtube2-plugin/volumio-youtube2$ git checkout volumio-2.x
 volumio:~/youtube2-plugin/volumio-youtube2$ volumio plugin update
 
 This command will update the plugin on your device
