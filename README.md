@@ -57,6 +57,10 @@ The plugin uses the following libraries for obtaining data through scraping (cre
 
 ### Changelog
 
+0.1.3
+- [Changed] Check audio URLs and refetch if 403 or 404 response encountered
+- [Changed] Update plugin for Volumio 3
+
 0.1.2
 - [Changed] More robust fetching of Mix playlists for autoplay
 - [Added] Google API Setup Guide button in plugin settings
