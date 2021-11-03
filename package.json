@@ -15,9 +15,18 @@
   "volumio_info": {
     "prettyName": "Youtube2",
     "plugin_type": "music_service",
-    "os": [ "buster" ],
+    "os": [
+			"buster"
+		],
     "icon": "fa-youtube",
-    "boot_priority": 10
+    "boot_priority": 10,
+    "details": "Youtube2 plugin for Volumio",
+		"changelog": "",
+		"architectures": [
+			"amd64",
+			"armhf",
+			"i386"
+		]
   },
   "engines": {
     "node": ">=8",
