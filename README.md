@@ -57,6 +57,10 @@ The plugin uses the following libraries for obtaining data through scraping (cre
 
 ### Changelog
 
+0.1.4
+- [Fixed] `contentDetails` missing in getVideo() (gapi model) which, among other things, breaks autoplay
+- [Changed] Update package.json to meet plugin submission criteria for Volumio 3
+
 0.1.3
 - [Changed] Check audio URLs and refetch if 403 or 404 response encountered
 - [Changed] Update plugin for Volumio 3
