@@ -44,8 +44,9 @@ When a new version of the plugin becomes available, you can ssh into your Volumi
 
 volumio:~$ cd ~/youtube2-plugin/volumio-youtube2/
 volumio:~/youtube2-plugin/volumio-youtube2$ git pull
-...
 volumio:~/youtube2-plugin/volumio-youtube2$ git checkout volumio-2.x
+volumio:~/youtube2-plugin/volumio-youtube2$ git pull
+...
 volumio:~/youtube2-plugin/volumio-youtube2$ volumio plugin update
 
 This command will update the plugin on your device
