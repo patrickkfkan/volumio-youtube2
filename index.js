@@ -395,6 +395,14 @@ ControllerYouTube2.prototype.seek = function (position) {
     return this.playController.seek(position);
 }
 
+ControllerYouTube2.prototype.next = function () {
+    return this.playController.next();
+}
+
+ControllerYouTube2.prototype.previous = function () {
+    return this.playController.previous();
+}
+
 ControllerYouTube2.prototype.search = function(query) {
     return this.searchController.search(query);
 }
