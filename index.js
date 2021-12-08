@@ -410,3 +410,7 @@ ControllerYouTube2.prototype.search = function(query) {
 /*ControllerYouTube2.prototype.prefetch = function (trackBlock) {
     return this.playController.prefetch(trackBlock);
 };*/
+
+ControllerYouTube2.prototype.goto = function(data) {
+    return this.browseController.goto(data);
+}
