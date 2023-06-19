@@ -163,11 +163,13 @@ class ControllerYouTube2 {
         const addToHistory = yt2.getConfigValue('addToHistory', true);
         const liveStreamQuality = yt2.getConfigValue('liveStreamQuality', 'auto');
         const liveStreamQualityOptions = configModel.getLiveStreamQualityOptions();
+        const prefetchEnabled = yt2.getConfigValue('prefetch', true);
         playbackUIConf.content[0].value = autoplay;
         playbackUIConf.content[1].value = autoplayClearQueue;
         playbackUIConf.content[2].value = addToHistory;
         playbackUIConf.content[3].options = liveStreamQualityOptions;
         playbackUIConf.content[3].value = liveStreamQualityOptions.find((o) => o.value === liveStreamQuality);
+        playbackUIConf.content[4].value = prefetchEnabled;
 
         defer.resolve(uiconf);
       })
@@ -331,6 +333,7 @@ class ControllerYouTube2 {
     yt2.setConfigValue('autoplayClearQueue', data.autoplayClearQueue);
     yt2.setConfigValue('addToHistory', data.addToHistory);
     yt2.setConfigValue('liveStreamQuality', data.liveStreamQuality.value);
+    yt2.setConfigValue('prefetch', data.prefetch);
 
     yt2.toast('success', yt2.getI18n('YOUTUBE2_SETTINGS_SAVED'));
   }
@@ -409,12 +412,12 @@ class ControllerYouTube2 {
     return this.#playController.previous();
   }
 
-  /*Prefetch(track: any) {
+  prefetch(track: QueueItem) {
     if (!this.#playController) {
       return libQ.reject('YouTube2 plugin is not started');
     }
     return jsPromiseToKew(this.#playController.prefetch(track));
-  }*/
+  }
 
   search(query: SearchQuery) {
     if (!this.#searchController) {

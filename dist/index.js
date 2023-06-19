@@ -195,11 +195,13 @@ class ControllerYouTube2 {
             const addToHistory = YouTube2Context_1.default.getConfigValue('addToHistory', true);
             const liveStreamQuality = YouTube2Context_1.default.getConfigValue('liveStreamQuality', 'auto');
             const liveStreamQualityOptions = configModel.getLiveStreamQualityOptions();
+            const prefetchEnabled = YouTube2Context_1.default.getConfigValue('prefetch', true);
             playbackUIConf.content[0].value = autoplay;
             playbackUIConf.content[1].value = autoplayClearQueue;
             playbackUIConf.content[2].value = addToHistory;
             playbackUIConf.content[3].options = liveStreamQualityOptions;
             playbackUIConf.content[3].value = liveStreamQualityOptions.find((o) => o.value === liveStreamQuality);
+            playbackUIConf.content[4].value = prefetchEnabled;
             defer.resolve(uiconf);
         })
             .fail((error) => {
@@ -257,6 +259,7 @@ class ControllerYouTube2 {
         YouTube2Context_1.default.setConfigValue('autoplayClearQueue', data.autoplayClearQueue);
         YouTube2Context_1.default.setConfigValue('addToHistory', data.addToHistory);
         YouTube2Context_1.default.setConfigValue('liveStreamQuality', data.liveStreamQuality.value);
+        YouTube2Context_1.default.setConfigValue('prefetch', data.prefetch);
         YouTube2Context_1.default.toast('success', YouTube2Context_1.default.getI18n('YOUTUBE2_SETTINGS_SAVED'));
     }
     handleBrowseUri(uri) {
@@ -313,12 +316,12 @@ class ControllerYouTube2 {
         }
         return __classPrivateFieldGet(this, _ControllerYouTube2_playController, "f").previous();
     }
-    /*Prefetch(track: any) {
-      if (!this.#playController) {
-        return libQ.reject('YouTube2 plugin is not started');
-      }
-      return jsPromiseToKew(this.#playController.prefetch(track));
-    }*/
+    prefetch(track) {
+        if (!__classPrivateFieldGet(this, _ControllerYouTube2_playController, "f")) {
+            return kew_1.default.reject('YouTube2 plugin is not started');
+        }
+        return (0, util_1.jsPromiseToKew)(__classPrivateFieldGet(this, _ControllerYouTube2_playController, "f").prefetch(track));
+    }
     search(query) {
         if (!__classPrivateFieldGet(this, _ControllerYouTube2_searchController, "f")) {
             return kew_1.default.reject('YouTube2 plugin is not started');

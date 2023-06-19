@@ -15,5 +15,6 @@ export default class PlayController {
     next(): any;
     previous(): any;
     getGotoUri(type: 'album' | 'artist', uri: QueueItem['uri']): Promise<string | null>;
+    prefetch(track: QueueItem): Promise<any>;
 }
 //# sourceMappingURL=PlayController.d.ts.map

@@ -36,7 +36,7 @@ var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-var _PlayController_instances, _PlayController_mpdPlugin, _PlayController_autoplayListener, _PlayController_lastPlaybackInfo, _PlayController_addAutoplayListener, _PlayController_removeAutoplayListener, _PlayController_getExplodedTrackInfoFromUri, _PlayController_doPlay, _PlayController_mpdAddTags, _PlayController_handleAutoplay, _PlayController_findLastPlayedTrackQueueIndex, _PlayController_getAutoplayItems;
+var _PlayController_instances, _PlayController_mpdPlugin, _PlayController_autoplayListener, _PlayController_lastPlaybackInfo, _PlayController_addAutoplayListener, _PlayController_removeAutoplayListener, _PlayController_getExplodedTrackInfoFromUri, _PlayController_getPlaybackInfoFromUri, _PlayController_doPlay, _PlayController_mpdAddTags, _PlayController_handleAutoplay, _PlayController_findLastPlayedTrackQueueIndex, _PlayController_getAutoplayItems;
 Object.defineProperty(exports, "__esModule", { value: true });
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
@@ -63,13 +63,7 @@ class PlayController {
      */
     async clearAddPlayTrack(track) {
         YouTube2Context_1.default.getLogger().info(`[youtube2-play] clearAddPlayTrack: ${track.uri}`);
-        const watchEndpoint = __classPrivateFieldGet(this, _PlayController_instances, "m", _PlayController_getExplodedTrackInfoFromUri).call(this, track.uri)?.endpoint;
-        const videoId = watchEndpoint?.payload?.videoId;
-        if (!videoId) {
-            throw Error(`Invalid track uri: ${track.uri}`);
-        }
-        const model = model_1.default.getInstance(model_1.ModelType.Video);
-        const playbackInfo = await model.getPlaybackInfo(videoId);
+        const { videoId, info: playbackInfo } = await __classPrivateFieldGet(this, _PlayController_instances, "m", _PlayController_getPlaybackInfoFromUri).call(this, track.uri);
         if (!playbackInfo) {
             throw Error(`Could not obtain playback info for videoId: ${videoId})`);
         }
@@ -82,6 +76,7 @@ class PlayController {
         track.name = playbackInfo.title || track.title;
         track.artist = playbackInfo.author?.name || track.artist;
         track.albumart = playbackInfo.thumbnail || track.albumart;
+        track.duration = playbackInfo.isLive ? 0 : playbackInfo.duration;
         if (stream.bitrate) {
             track.samplerate = stream.bitrate;
         }
@@ -172,6 +167,43 @@ class PlayController {
         }
         return null;
     }
+    async prefetch(track) {
+        const prefetchEnabled = YouTube2Context_1.default.getConfigValue('prefetch', true);
+        if (!prefetchEnabled) {
+            /**
+             * Volumio doesn't check whether `prefetch()` is actually performed or
+             * successful (such as inspecting the result of the function call) -
+             * it just sets its internal state variable `prefetchDone`
+             * to `true`. This results in the next track being skipped in cases
+             * where prefetch is not performed or fails. So when we want to signal
+             * that prefetch is not done, we would have to directly falsify the
+             * statemachine's `prefetchDone` variable.
+             */
+            YouTube2Context_1.default.getLogger().info('[youtube2-play] Prefetch disabled');
+            YouTube2Context_1.default.getStateMachine().prefetchDone = false;
+            return;
+        }
+        let streamUrl;
+        try {
+            const { videoId, info: playbackInfo } = await __classPrivateFieldGet(this, _PlayController_instances, "m", _PlayController_getPlaybackInfoFromUri).call(this, track.uri);
+            streamUrl = playbackInfo?.stream?.url;
+            if (!streamUrl) {
+                throw Error(`Stream not found for videoId '${videoId}'`);
+            }
+        }
+        catch (error) {
+            YouTube2Context_1.default.getLogger().error(`[youtube2-play] Prefetch failed: ${error}`);
+            YouTube2Context_1.default.getStateMachine().prefetchDone = false;
+            return;
+        }
+        const mpdPlugin = __classPrivateFieldGet(this, _PlayController_mpdPlugin, "f");
+        return (0, util_1.kewToJSPromise)(mpdPlugin.sendMpdCommand(`addid "${streamUrl}"`, [])
+            .then((addIdResp) => __classPrivateFieldGet(this, _PlayController_instances, "m", _PlayController_mpdAddTags).call(this, addIdResp, track))
+            .then(() => {
+            YouTube2Context_1.default.getLogger().info(`[youtube2-play] Prefetched and added track to MPD queue: ${track.name}`);
+            return mpdPlugin.sendMpdCommand('consume 1', []);
+        }));
+    }
 }
 exports.default = PlayController;
 _PlayController_mpdPlugin = new WeakMap(), _PlayController_autoplayListener = new WeakMap(), _PlayController_lastPlaybackInfo = new WeakMap(), _PlayController_instances = new WeakSet(), _PlayController_addAutoplayListener = function _PlayController_addAutoplayListener() {
@@ -201,6 +233,17 @@ _PlayController_mpdPlugin = new WeakMap(), _PlayController_autoplayListener = ne
         return null;
     }
     return trackView.explodeTrackData;
+}, _PlayController_getPlaybackInfoFromUri = async function _PlayController_getPlaybackInfoFromUri(uri) {
+    const watchEndpoint = __classPrivateFieldGet(this, _PlayController_instances, "m", _PlayController_getExplodedTrackInfoFromUri).call(this, uri)?.endpoint;
+    const videoId = watchEndpoint?.payload?.videoId;
+    if (!videoId) {
+        throw Error(`Invalid track uri: ${uri}`);
+    }
+    const model = model_1.default.getInstance(model_1.ModelType.Video);
+    return {
+        videoId,
+        info: await model.getPlaybackInfo(videoId)
+    };
 }, _PlayController_doPlay = function _PlayController_doPlay(streamUrl, track) {
     const mpdPlugin = __classPrivateFieldGet(this, _PlayController_mpdPlugin, "f");
     return (0, util_1.kewToJSPromise)(mpdPlugin.sendMpdCommand('stop', [])

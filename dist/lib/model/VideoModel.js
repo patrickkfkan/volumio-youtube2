@@ -50,6 +50,7 @@ class VideoModel extends BaseModel_1.BaseModel {
                 },
                 thumbnail: InnertubeResultParser_1.default.parseThumbnail(basicInfo.thumbnail) || '',
                 isLive: !!basicInfo.is_live,
+                duration: basicInfo.duration,
                 addToHistory: () => {
                     return info?.addToWatchHistory();
                 }

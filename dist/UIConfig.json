@@ -94,7 +94,8 @@
           "autoplay",
           "autoplayClearQueue",
           "addToHistory",
-          "liveStreamQuality"
+          "liveStreamQuality",
+          "prefetch"
         ]
       },
       "content": [
@@ -130,6 +131,12 @@
           "doc": "TRANSLATE.YOUTUBE2_DOC_LIVE_STREAM_QUALITY",
           "value": {},
           "options": []
+        },
+        {
+          "id": "prefetch",
+          "element": "switch",
+          "label": "TRANSLATE.YOUTUBE2_PREFETCH_NEXT_TRACK",
+          "value": true
         }
       ]
     }

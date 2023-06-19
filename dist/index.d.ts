@@ -24,6 +24,7 @@ declare class ControllerYouTube2 {
     seek(position: number): any;
     next(): any;
     previous(): any;
+    prefetch(track: QueueItem): any;
     search(query: SearchQuery): any;
     goto(data: GotoParams): any;
 }

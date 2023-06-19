@@ -17,6 +17,7 @@
   "YOUTUBE2_AUTOPLAY_CLEAR_QUEUE": "- Clear queue first",
   "YOUTUBE2_ADD_TO_HISTORY": "Add to history",
   "YOUTUBE2_LIVE_STREAM_QUALITY": "Live Stream Quality",
+  "YOUTUBE2_PREFETCH_NEXT_TRACK": "Prefetch next track",
   "YOUTUBE2_AUTO": "Auto",
   "YOUTUBE2_SAVE": "Save",
   "YOUTUBE2_SETTINGS_SAVED": "Settings saved",

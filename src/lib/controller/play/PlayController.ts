@@ -12,6 +12,7 @@ import { VideoView } from '../browse/view-handlers/VideoViewHandler';
 import ViewHelper from '../browse/view-handlers/ViewHelper';
 import ExplodeHelper from '../../util/ExplodeHelper';
 import { GenericView } from '../browse/view-handlers/GenericViewHandler';
+import VideoPlaybackInfo from '../../types/VideoPlaybackInfo';
 
 interface MpdState {
   status: 'play' | 'stop' | 'pause';
@@ -62,14 +63,7 @@ export default class PlayController {
   async clearAddPlayTrack(track: QueueItem) {
     yt2.getLogger().info(`[youtube2-play] clearAddPlayTrack: ${track.uri}`);
 
-    const watchEndpoint = this.#getExplodedTrackInfoFromUri(track.uri)?.endpoint;
-    const videoId = watchEndpoint?.payload?.videoId;
-    if (!videoId) {
-      throw Error(`Invalid track uri: ${track.uri}`);
-    }
-
-    const model = Model.getInstance(ModelType.Video);
-    const playbackInfo = await model.getPlaybackInfo(videoId);
+    const {videoId, info: playbackInfo} = await this.#getPlaybackInfoFromUri(track.uri);
     if (!playbackInfo) {
       throw Error(`Could not obtain playback info for videoId: ${videoId})`);
     }
@@ -84,6 +78,8 @@ export default class PlayController {
     track.name = playbackInfo.title || track.title;
     track.artist = playbackInfo.author?.name || track.artist;
     track.albumart = playbackInfo.thumbnail || track.albumart;
+    track.duration = playbackInfo.isLive ? 0 : playbackInfo.duration;
+
     if (stream.bitrate) {
       track.samplerate = stream.bitrate;
     }
@@ -160,6 +156,20 @@ export default class PlayController {
     }
 
     return trackView.explodeTrackData;
+  }
+
+  async #getPlaybackInfoFromUri(uri: string): Promise<{videoId: string; info: VideoPlaybackInfo | null}> {
+    const watchEndpoint = this.#getExplodedTrackInfoFromUri(uri)?.endpoint;
+    const videoId = watchEndpoint?.payload?.videoId;
+    if (!videoId) {
+      throw Error(`Invalid track uri: ${uri}`);
+    }
+
+    const model = Model.getInstance(ModelType.Video);
+    return {
+      videoId,
+      info: await model.getPlaybackInfo(videoId)
+    };
   }
 
   #doPlay(streamUrl: string, track: QueueItem) {
@@ -357,5 +367,44 @@ export default class PlayController {
     }
 
     return null;
+  }
+
+  async prefetch(track: QueueItem) {
+    const prefetchEnabled = yt2.getConfigValue('prefetch', true);
+    if (!prefetchEnabled) {
+      /**
+       * Volumio doesn't check whether `prefetch()` is actually performed or
+       * successful (such as inspecting the result of the function call) -
+       * it just sets its internal state variable `prefetchDone`
+       * to `true`. This results in the next track being skipped in cases
+       * where prefetch is not performed or fails. So when we want to signal
+       * that prefetch is not done, we would have to directly falsify the
+       * statemachine's `prefetchDone` variable.
+       */
+      yt2.getLogger().info('[youtube2-play] Prefetch disabled');
+      yt2.getStateMachine().prefetchDone = false;
+      return;
+    }
+    let streamUrl;
+    try {
+      const { videoId, info: playbackInfo } = await this.#getPlaybackInfoFromUri(track.uri);
+      streamUrl = playbackInfo?.stream?.url;
+      if (!streamUrl) {
+        throw Error(`Stream not found for videoId '${videoId}'`);
+      }
+    }
+    catch (error: any) {
+      yt2.getLogger().error(`[youtube2-play] Prefetch failed: ${error}`);
+      yt2.getStateMachine().prefetchDone = false;
+      return;
+    }
+
+    const mpdPlugin = this.#mpdPlugin;
+    return kewToJSPromise(mpdPlugin.sendMpdCommand(`addid "${streamUrl}"`, [])
+      .then((addIdResp: { Id: string }) => this.#mpdAddTags(addIdResp, track))
+      .then(() => {
+        yt2.getLogger().info(`[youtube2-play] Prefetched and added track to MPD queue: ${track.name}`);
+        return mpdPlugin.sendMpdCommand('consume 1', []);
+      }));
   }
 }

@@ -8,6 +8,7 @@ interface VideoPlaybackInfo {
   thumbnail: string;
   isLive?: boolean;
   stream?: VideoStream | null;
+  duration?: number;
   addToHistory: () => Promise<any>;
 }
 
