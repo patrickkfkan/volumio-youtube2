@@ -1,0 +1,1 @@
+{"version":3,"file":"WatchContent.js","sourceRoot":"","sources":["../../../src/lib/types/WatchContent.ts"],"names":[],"mappings":"","sourcesContent":["import { ContentItem } from '.';\nimport Endpoint from './Endpoint';\n\ninterface WatchContent {\n  type: 'watch';\n  playlist?: ContentItem.Playlist;\n  autoplay?: Endpoint;\n}\n\nexport default WatchContent;\n"]}
