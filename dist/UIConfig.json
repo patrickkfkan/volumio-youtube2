@@ -93,6 +93,7 @@
         "data": [
           "autoplay",
           "autoplayClearQueue",
+          "autoplayPrefMixRelated",
           "addToHistory",
           "liveStreamQuality",
           "prefetch"
@@ -111,6 +112,17 @@
           "element": "switch",
           "label": "TRANSLATE.YOUTUBE2_AUTOPLAY_CLEAR_QUEUE",
           "doc": "TRANSLATE.YOUTUBE2_DOC_AUTOPLAY_CLEAR_QUEUE",
+          "value": false,
+          "visibleIf": {
+            "field": "autoplay",
+            "value": true
+          }
+        },
+        {
+          "id": "autoplayPrefMixRelated",
+          "element": "switch",
+          "label": "TRANSLATE.YOUTUBE2_AUTOPLAY_PREF_MIX_RELATED",
+          "doc": "TRANSLATE.YOUTUBE2_DOC_AUTOPLAY_PREF_MIX_RELATED",
           "value": false,
           "visibleIf": {
             "field": "autoplay",

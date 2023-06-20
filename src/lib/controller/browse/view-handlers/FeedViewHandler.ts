@@ -115,7 +115,7 @@ export default abstract class FeedViewHandler<V extends FeedView = FeedView> ext
     // Section title
     const prevItemCount = this.#getContinuationPrevItemCount();
     const currentItemCount = prevItemCount + mainItems.length;
-    const showingResultsText = mainItems.length > 0 && (section.continuation || contents.type === 'continuation') && isPlaylistContents ?
+    const showingResultsText = mainItems.length > 0 && (section.continuation || (contents.type === 'page' && contents.isContinuation)) && isPlaylistContents ?
       yt2.getI18n('YOUTUBE2_SHOWING_RESULTS', prevItemCount + 1, currentItemCount) : null;
     let sectionTitle = section.title;
     if (showingResultsText) {
@@ -268,7 +268,7 @@ export default abstract class FeedViewHandler<V extends FeedView = FeedView> ext
   }
 
   applyContinuationBundle(contents: PageContent) {
-    if (contents.type !== 'continuation') {
+    if (!contents.isContinuation) {
       return false;
     }
 

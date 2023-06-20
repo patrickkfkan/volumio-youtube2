@@ -4,7 +4,7 @@ var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (
     if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
     return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
 };
-var _a, _InnertubeResultParser_parseWatchEndpointResult, _InnertubeResultParser_parseSearchEndpointResult, _InnertubeResultParser_parseBrowseEndpointResult, _InnertubeResultParser_parseHeader, _InnertubeResultParser_parseContentToSection, _InnertubeResultParser_parseContentItem, _InnertubeResultParser_parseAuthor, _InnertubeResultParser_parseDuration, _InnertubeResultParser_parseContinuationItem, _InnertubeResultParser_parseButton;
+var _a, _InnertubeResultParser_parseWatchContinuationEndpointResult, _InnertubeResultParser_parseWatchEndpointResult, _InnertubeResultParser_parseSearchEndpointResult, _InnertubeResultParser_parseBrowseEndpointResult, _InnertubeResultParser_parseHeader, _InnertubeResultParser_parseContentToSection, _InnertubeResultParser_parseContentItem, _InnertubeResultParser_parseAuthor, _InnertubeResultParser_parseDuration, _InnertubeResultParser_parseContinuationItem, _InnertubeResultParser_parseButton;
 Object.defineProperty(exports, "__esModule", { value: true });
 const volumio_youtubei_js_1 = require("volumio-youtubei.js");
 const Endpoint_1 = require("../types/Endpoint");
@@ -13,6 +13,8 @@ class InnertubeResultParser {
         switch (originatingEndpointType) {
             case Endpoint_1.EndpointType.Watch:
                 return __classPrivateFieldGet(this, _a, "m", _InnertubeResultParser_parseWatchEndpointResult).call(this, data);
+            case Endpoint_1.EndpointType.WatchContinuation:
+                return __classPrivateFieldGet(this, _a, "m", _InnertubeResultParser_parseWatchContinuationEndpointResult).call(this, data);
             case Endpoint_1.EndpointType.Search:
                 return __classPrivateFieldGet(this, _a, "m", _InnertubeResultParser_parseSearchEndpointResult).call(this, data);
             // Browse / BrowseContinuation / SearchContinuation
@@ -96,6 +98,16 @@ class InnertubeResultParser {
                     type: Endpoint_1.EndpointType.Watch,
                     payload: createPayload(['videoId', 'playlistId', 'params', 'index'])
                 };
+            case 'next':
+                if (data?.payload?.request === 'CONTINUATION_REQUEST_TYPE_WATCH_NEXT') {
+                    return {
+                        type: Endpoint_1.EndpointType.WatchContinuation,
+                        payload: {
+                            token: data.payload.token
+                        }
+                    };
+                }
+                break;
             default:
         }
         if (data?.metadata?.page_type === 'WEB_PAGE_TYPE_SHORTS') {
@@ -110,14 +122,47 @@ class InnertubeResultParser {
     }
 }
 exports.default = InnertubeResultParser;
-_a = InnertubeResultParser, _InnertubeResultParser_parseWatchEndpointResult = function _InnertubeResultParser_parseWatchEndpointResult(data) {
+_a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpointResult = function _InnertubeResultParser_parseWatchContinuationEndpointResult(data) {
+    const itemContinuations = data.on_response_received_endpoints || null;
+    if (itemContinuations && itemContinuations.length > 0) {
+        const actions = itemContinuations.filter((c) => c.type === 'appendContinuationItemsAction');
+        if (actions) {
+            const acItems = actions.reduce((result, ac) => {
+                if (ac.contents) {
+                    result.push(...ac.contents);
+                }
+                return result;
+            }, []);
+            const parsedItems = acItems.reduce((result, item) => {
+                const parsedItem = __classPrivateFieldGet(this, _a, "m", _InnertubeResultParser_parseContentItem).call(this, item);
+                if (parsedItem && (parsedItem.type === 'video' || parsedItem.type === 'playlist')) {
+                    result.push(parsedItem);
+                }
+                return result;
+            }, []);
+            const watchContinuationContent = {
+                type: 'watch',
+                isContinuation: true,
+                items: parsedItems
+            };
+            const continuationItem = acItems.find((item) => item.type === 'ContinuationItem');
+            const parsedContinuation = __classPrivateFieldGet(this, _a, "m", _InnertubeResultParser_parseContinuationItem).call(this, continuationItem);
+            if (parsedContinuation && parsedContinuation.endpoint.type === Endpoint_1.EndpointType.WatchContinuation) {
+                watchContinuationContent.continuation = parsedContinuation;
+            }
+            return watchContinuationContent;
+        }
+    }
+    return null;
+}, _InnertubeResultParser_parseWatchEndpointResult = function _InnertubeResultParser_parseWatchEndpointResult(data) {
     const dataContents = this.unwrap(data.contents);
     if (!dataContents) {
         return null;
     }
-    const result = { type: 'watch' };
+    const result = { type: 'watch', isContinuation: false };
     if (!Array.isArray(dataContents) && dataContents.type === 'TwoColumnWatchNextResults') {
         const twoColumnWatchNextResults = dataContents;
+        // Playlist items
         const playlistData = twoColumnWatchNextResults.playlist;
         if (playlistData) {
             const playlistItems = playlistData.contents.reduce((items, itemData) => {
@@ -139,9 +184,26 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchEndpointResult = fu
                 result.playlist.author = playlistAuthor;
             }
         }
+        // Autoplay item
         const autoplayEndpoint = this.parseEndpoint(twoColumnWatchNextResults.autoplay?.sets[0].autoplay_video);
         if (autoplayEndpoint) {
             result.autoplay = autoplayEndpoint;
+        }
+        // Related
+        // - If user is signed out, related items appear directly under secondary_results
+        // - If user is signed in, related items appear in ItemSection under secondary_results
+        const itemSection = twoColumnWatchNextResults.secondary_results.firstOfType(volumio_youtubei_js_1.YTNodes.ItemSection);
+        const relatedItemList = itemSection ? itemSection.contents : twoColumnWatchNextResults.secondary_results;
+        if (relatedItemList) {
+            const parsedItems = relatedItemList.map((item) => __classPrivateFieldGet(this, _a, "m", _InnertubeResultParser_parseContentItem).call(this, item));
+            result.related = {
+                items: parsedItems.filter((item) => item?.type === 'video' || item?.type === 'playlist')
+            };
+            const continuationItem = relatedItemList.find((item) => item.type === 'ContinuationItem');
+            const parsedContinuation = __classPrivateFieldGet(this, _a, "m", _InnertubeResultParser_parseContinuationItem).call(this, continuationItem);
+            if (parsedContinuation && parsedContinuation.endpoint.type === Endpoint_1.EndpointType.WatchContinuation) {
+                result.related.continuation = parsedContinuation;
+            }
         }
         return result;
     }
@@ -173,7 +235,8 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchEndpointResult = fu
             }, []);
             if (sections) {
                 return {
-                    type: 'continuation',
+                    type: 'page',
+                    isContinuation: true,
                     sections
                 };
             }
@@ -182,6 +245,7 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchEndpointResult = fu
     }
     const result = {
         type: 'page',
+        isContinuation: false,
         sections: []
     };
     if (data.header) {
@@ -382,7 +446,8 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchEndpointResult = fu
         }
         else if (contentItem.type === 'ContinuationItem') {
             const continuationItem = __classPrivateFieldGet(this, _a, "m", _InnertubeResultParser_parseContinuationItem).call(this, contentItem);
-            if (continuationItem) {
+            if (continuationItem && (continuationItem.endpoint.type === Endpoint_1.EndpointType.BrowseContinuation ||
+                continuationItem.endpoint.type === Endpoint_1.EndpointType.SearchContinuation)) {
                 section.continuation = continuationItem;
             }
         }
@@ -571,6 +636,7 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchEndpointResult = fu
     }
     switch (data.type) {
         case 'Video':
+        case 'CompactVideo':
         case 'VideoCard':
         case 'GridVideo':
         case 'PlaylistVideo':
@@ -615,6 +681,7 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchEndpointResult = fu
         case 'GridPlaylist':
         case 'Mix':
         case 'GridMix':
+        case 'CompactMix':
             const plData = data;
             const playlistItem = {
                 type: 'playlist',
@@ -623,7 +690,8 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchEndpointResult = fu
                 thumbnail: this.parseThumbnail(plData.thumbnails) || null,
                 author: __classPrivateFieldGet(this, _a, "m", _InnertubeResultParser_parseAuthor).call(this, plData.author),
                 videoCount: this.unwrap(plData.video_count),
-                endpoint: this.parseEndpoint(plData.endpoint) // Watch endpoint
+                endpoint: this.parseEndpoint(plData.endpoint),
+                isMix: data.type.includes('Mix')
             };
             const plBrowseEndpoint = this.parseEndpoint(plData.view_playlist?.endpoint);
             if (plBrowseEndpoint) { // Browse endpoint for GridPlaylist
@@ -704,8 +772,12 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchEndpointResult = fu
     }
     return null;
 }, _InnertubeResultParser_parseContinuationItem = function _InnertubeResultParser_parseContinuationItem(data) {
+    if (!data) {
+        return null;
+    }
     const endpoint = this.parseEndpoint(data.endpoint);
-    if (!endpoint || (endpoint.type !== Endpoint_1.EndpointType.BrowseContinuation && endpoint.type !== Endpoint_1.EndpointType.SearchContinuation)) {
+    if (!endpoint || (endpoint.type !== Endpoint_1.EndpointType.BrowseContinuation &&
+        endpoint.type !== Endpoint_1.EndpointType.SearchContinuation && endpoint.type !== Endpoint_1.EndpointType.WatchContinuation)) {
         return null;
     }
     const result = {

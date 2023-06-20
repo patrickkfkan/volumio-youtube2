@@ -36,7 +36,7 @@ class SubscriptionsViewHandler extends GenericViewHandler_1.default {
     // Override
     async getContents() {
         const contents = (await super.getContents()) || {};
-        if (contents?.type === 'continuation') {
+        if (contents.isContinuation) {
             return contents;
         }
         // We should never come to this, but just in case...

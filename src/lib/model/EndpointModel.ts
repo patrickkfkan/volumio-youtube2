@@ -2,12 +2,13 @@ import { InnertubeEndpoint, Parser } from 'volumio-youtubei.js';
 import { BaseModel } from './BaseModel';
 import Endpoint, { EndpointType } from '../types/Endpoint';
 import InnertubeResultParser from './InnertubeResultParser';
-import WatchContent from '../types/WatchContent';
+import WatchContent, { WatchContinuationContent } from '../types/WatchContent';
 import PageContent from '../types/PageContent';
 
 export default class EndpointModel extends BaseModel {
 
   async getContents(endpoint: Endpoint & {type: EndpointType.Watch}): Promise<WatchContent | null>;
+  async getContents(endpoint: Endpoint & {type: EndpointType.WatchContinuation}): Promise<WatchContinuationContent | null>;
   async getContents(endpoint: Endpoint & {type: EndpointType.Browse | EndpointType.BrowseContinuation | EndpointType.Search | EndpointType.SearchContinuation}): Promise<PageContent | null>;
   async getContents(endpoint: Endpoint & {type: EndpointType}): Promise<PageContent | WatchContent | null>;
   async getContents(endpoint: Endpoint) {
@@ -20,6 +21,7 @@ export default class EndpointModel extends BaseModel {
         url = '/browse';
         break;
       case EndpointType.Watch:
+      case EndpointType.WatchContinuation:
         url = '/next';
         break;
       case EndpointType.Search:

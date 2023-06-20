@@ -88,7 +88,7 @@ class FeedViewHandler extends ExplodableViewHandler_1.default {
         return bundle;
     }
     applyContinuationBundle(contents) {
-        if (contents.type !== 'continuation') {
+        if (!contents.isContinuation) {
             return false;
         }
         const view = this.currentView;
@@ -217,7 +217,7 @@ _FeedViewHandler_instances = new WeakSet(), _FeedViewHandler_sectionToLists = fu
     // Section title
     const prevItemCount = __classPrivateFieldGet(this, _FeedViewHandler_instances, "m", _FeedViewHandler_getContinuationPrevItemCount).call(this);
     const currentItemCount = prevItemCount + mainItems.length;
-    const showingResultsText = mainItems.length > 0 && (section.continuation || contents.type === 'continuation') && isPlaylistContents ?
+    const showingResultsText = mainItems.length > 0 && (section.continuation || (contents.type === 'page' && contents.isContinuation)) && isPlaylistContents ?
         YouTube2Context_1.default.getI18n('YOUTUBE2_SHOWING_RESULTS', prevItemCount + 1, currentItemCount) : null;
     let sectionTitle = section.title;
     if (showingResultsText) {

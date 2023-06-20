@@ -24,7 +24,7 @@ export interface Section {
   subtitle?: string;
   items: SectionItem[];
   filters?: Option[];
-  continuation?: Continuation;
+  continuation?: Continuation<EndpointType.BrowseContinuation | EndpointType.SearchContinuation>;
   menus?: Option[];
   buttons?: Button[];
   endpoint?: Endpoint;
@@ -40,10 +40,10 @@ export interface Option {
   }[];
 }
 
-export interface Continuation {
+export interface Continuation<T extends EndpointType.BrowseContinuation | EndpointType.SearchContinuation | EndpointType.WatchContinuation> {
   type: 'continuation';
   text?: string;
-  endpoint: Endpoint & {type: EndpointType.BrowseContinuation | EndpointType.SearchContinuation};
+  endpoint: Endpoint & {type: T};
 }
 
 export interface Button {

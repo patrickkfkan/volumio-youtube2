@@ -13,6 +13,7 @@ import ViewHelper from '../browse/view-handlers/ViewHelper';
 import ExplodeHelper from '../../util/ExplodeHelper';
 import { GenericView } from '../browse/view-handlers/GenericViewHandler';
 import VideoPlaybackInfo from '../../types/VideoPlaybackInfo';
+import { ContentItem } from '../../types';
 
 interface MpdState {
   status: 'play' | 'stop' | 'pause';
@@ -274,13 +275,16 @@ export default class PlayController {
 
   async #getAutoplayItems() {
     const lastPlayedEndpoint = this.#getExplodedTrackInfoFromUri(this.#lastPlaybackInfo?.track?.uri)?.endpoint;
+    const videoId = lastPlayedEndpoint?.payload?.videoId;
 
-    if (!lastPlayedEndpoint?.payload?.videoId) {
+    if (!videoId) {
       return [];
     }
 
+    yt2.getLogger().info(`[youtube2-play] Obtaining autoplay videos for ${videoId}`);
+
     const autoplayPayload: Endpoint['payload'] = {
-      videoId: lastPlayedEndpoint.payload.videoId
+      videoId
     };
     if (lastPlayedEndpoint.payload.playlistId) {
       autoplayPayload.playlistId = lastPlayedEndpoint.payload.playlistId;
@@ -302,12 +306,54 @@ export default class PlayController {
     const contents = await endpointModel.getContents(autoplayFetchEndpoint);
 
     const autoplayItems: ExplodedTrackInfo[] = [];
+
+    // Get from current playlist, if any.
     if (contents?.playlist) {
       const currentIndex = contents.playlist.currentIndex || 0;
       const itemsAfter = contents.playlist.items?.slice(currentIndex + 1).filter((item) => item.type === 'video') || [];
       const explodedTrackInfos = itemsAfter.map((item) => ExplodeHelper.getExplodedTrackInfoFromVideo(item));
       autoplayItems.push(...explodedTrackInfos);
+      yt2.getLogger().info(`[youtube2-play] Obtained ${autoplayItems.length} videos for autoplay from current playlist`);
     }
+
+    /**
+     * If there are no items added, that means playlist doesn't exist or has
+     * reached the end. From here, we obtain the autoplay video in the following
+     * order of priority:
+     *
+     * 1. Videos in a Mix playlist that appears in the Related section
+     * 2. Any video in Related section
+     * 3. YouTube default
+     *
+     * (1 and 2 subject to plugin config)
+     */
+    const autoplayPrefMixRelated = yt2.getConfigValue<boolean>('autoplayPrefMixRelated', false);
+    const relatedItems = contents?.related?.items;
+
+    // 1. Mix
+    if (autoplayItems.length === 0 && relatedItems && autoplayPrefMixRelated) {
+      const mixPlaylist = relatedItems.find((item) => item.type === 'playlist' && item.isMix) as ContentItem.Playlist;
+      if (mixPlaylist?.endpoint && mixPlaylist.endpoint.type === EndpointType.Watch) {
+        // Get videos in the Mix playlist
+        const mixPlaylistContents = await endpointModel.getContents({...mixPlaylist.endpoint, type: mixPlaylist.endpoint.type});
+        if (mixPlaylistContents?.playlist?.items) {
+          const mixes = mixPlaylistContents.playlist.items.filter((item) => item.videoId !== videoId);
+          autoplayItems.push(...mixes.map((item) => ExplodeHelper.getExplodedTrackInfoFromVideo(item)));
+          yt2.getLogger().info(`[youtube2-play] Obtained ${autoplayItems.length} videos for autoplay from Mix playlist ${mixPlaylist.playlistId}`);
+        }
+      }
+    }
+
+    // 2. Related
+    if (autoplayItems.length === 0 && relatedItems && autoplayPrefMixRelated) {
+      const relatedVideos = relatedItems.filter((item) => item.type === 'video') as ContentItem.Video[];
+      if (relatedVideos) {
+        autoplayItems.push(...relatedVideos.map((item) => ExplodeHelper.getExplodedTrackInfoFromVideo(item)));
+        yt2.getLogger().info(`[youtube2-play] Obtained ${autoplayItems.length} related videos for autoplay`);
+      }
+    }
+
+    // 3. YouTube default
     if (autoplayItems.length === 0 && contents?.autoplay?.payload?.videoId) {
       const videoModel = Model.getInstance(ModelType.Video);
       // Contents.autoplay is just an endpoint, so we need to get video info (title, author...) from it
@@ -320,6 +366,7 @@ export default class PlayController {
           endpoint: contents.autoplay
         });
       }
+      yt2.getLogger().info('[youtube2-play] Used YouTube default result for autoplay');
     }
 
     if (autoplayItems.length > 0) {

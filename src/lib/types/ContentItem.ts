@@ -22,7 +22,8 @@ export interface Playlist {
   endpoint?: Endpoint;
   browseEndpoint?: Endpoint;
   items?: Video[];
-  currentIndex?: number
+  currentIndex?: number;
+  isMix?: boolean;
 }
 
 export interface EndpointLink {

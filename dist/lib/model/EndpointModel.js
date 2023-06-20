@@ -17,6 +17,7 @@ class EndpointModel extends BaseModel_1.BaseModel {
                 url = '/browse';
                 break;
             case Endpoint_1.EndpointType.Watch:
+            case Endpoint_1.EndpointType.WatchContinuation:
                 url = '/next';
                 break;
             case Endpoint_1.EndpointType.Search:

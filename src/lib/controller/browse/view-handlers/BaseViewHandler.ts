@@ -23,7 +23,7 @@ import PlaylistRenderer from './renderers/PlaylistRenderer';
 import VideoRenderer from './renderers/VideoRenderer';
 
 export interface ContinuationData {
-  continuation: PageElement.Continuation;
+  continuation: PageElement.Continuation<any>;
   prevItemCount: number;
   bundle: ContinuationBundle;
 }

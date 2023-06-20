@@ -48,7 +48,7 @@ export default class GenericViewHandler<V extends Omit<GenericView, 'name'> & { 
   protected async getContents(): Promise<PageContent> {
     const endpoint = this.assertEndpointExists(this.getEndpoint());
     const contents = await this.getModel(ModelType.Endpoint).getContents(endpoint);
-    return this.assertPageOrContinuationContents(contents);
+    return this.assertPageContents(contents);
   }
 
   protected assertEndpointExists(endpoint?: Endpoint | null): Endpoint {
@@ -59,10 +59,10 @@ export default class GenericViewHandler<V extends Omit<GenericView, 'name'> & { 
     return endpoint;
   }
 
-  protected assertPageOrContinuationContents(content: PageContent | WatchContent | null): PageContent {
-    if (content?.type !== 'page' && content?.type !== 'continuation') {
+  protected assertPageContents(content: PageContent | WatchContent | null): PageContent {
+    if (content?.type !== 'page') {
       yt2.toast('error', yt2.getI18n('YOUTUBE2_ERR_ENDPOINT_INVALID'));
-      throw Error(`Expecting page or continuation contents, but got ${content?.type}`);
+      throw Error(`Expecting page contents, but got ${content?.type}`);
     }
     return content;
   }

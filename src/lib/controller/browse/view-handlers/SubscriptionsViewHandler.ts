@@ -19,7 +19,7 @@ export default class SubscriptionsViewHandler extends GenericViewHandler<Subscri
   protected async getContents(): Promise<PageContent> {
     const contents = (await super.getContents()) || {};
 
-    if (contents?.type === 'continuation') {
+    if (contents.isContinuation) {
       return contents;
     }
 

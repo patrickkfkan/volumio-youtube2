@@ -3,6 +3,7 @@ export declare enum EndpointType {
     Watch = "watch",
     Search = "search",
     BrowseContinuation = "browseContinuation",
+    WatchContinuation = "watchContinuation",
     SearchContinuation = "searchContinuation"
 }
 interface Endpoint {

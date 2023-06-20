@@ -62,7 +62,7 @@ class GenericViewHandler extends FeedViewHandler_1.default {
     async getContents() {
         const endpoint = this.assertEndpointExists(this.getEndpoint());
         const contents = await this.getModel(model_1.ModelType.Endpoint).getContents(endpoint);
-        return this.assertPageOrContinuationContents(contents);
+        return this.assertPageContents(contents);
     }
     assertEndpointExists(endpoint) {
         if (!endpoint) {
@@ -71,10 +71,10 @@ class GenericViewHandler extends FeedViewHandler_1.default {
         }
         return endpoint;
     }
-    assertPageOrContinuationContents(content) {
-        if (content?.type !== 'page' && content?.type !== 'continuation') {
+    assertPageContents(content) {
+        if (content?.type !== 'page') {
             YouTube2Context_1.default.toast('error', YouTube2Context_1.default.getI18n('YOUTUBE2_ERR_ENDPOINT_INVALID'));
-            throw Error(`Expecting page or continuation contents, but got ${content?.type}`);
+            throw Error(`Expecting page contents, but got ${content?.type}`);
         }
         return content;
     }

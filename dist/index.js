@@ -192,16 +192,18 @@ class ControllerYouTube2 {
             // Playback
             const autoplay = YouTube2Context_1.default.getConfigValue('autoplay', false);
             const autoplayClearQueue = YouTube2Context_1.default.getConfigValue('autoplayClearQueue', false);
+            const autoplayPrefMixRelated = YouTube2Context_1.default.getConfigValue('autoplayPrefMixRelated', false);
             const addToHistory = YouTube2Context_1.default.getConfigValue('addToHistory', true);
             const liveStreamQuality = YouTube2Context_1.default.getConfigValue('liveStreamQuality', 'auto');
             const liveStreamQualityOptions = configModel.getLiveStreamQualityOptions();
             const prefetchEnabled = YouTube2Context_1.default.getConfigValue('prefetch', true);
             playbackUIConf.content[0].value = autoplay;
             playbackUIConf.content[1].value = autoplayClearQueue;
-            playbackUIConf.content[2].value = addToHistory;
-            playbackUIConf.content[3].options = liveStreamQualityOptions;
-            playbackUIConf.content[3].value = liveStreamQualityOptions.find((o) => o.value === liveStreamQuality);
-            playbackUIConf.content[4].value = prefetchEnabled;
+            playbackUIConf.content[2].value = autoplayPrefMixRelated;
+            playbackUIConf.content[3].value = addToHistory;
+            playbackUIConf.content[4].options = liveStreamQualityOptions;
+            playbackUIConf.content[4].value = liveStreamQualityOptions.find((o) => o.value === liveStreamQuality);
+            playbackUIConf.content[5].value = prefetchEnabled;
             defer.resolve(uiconf);
         })
             .fail((error) => {
@@ -257,6 +259,7 @@ class ControllerYouTube2 {
     configSavePlayback(data) {
         YouTube2Context_1.default.setConfigValue('autoplay', data.autoplay);
         YouTube2Context_1.default.setConfigValue('autoplayClearQueue', data.autoplayClearQueue);
+        YouTube2Context_1.default.setConfigValue('autoplayPrefMixRelated', data.autoplayPrefMixRelated);
         YouTube2Context_1.default.setConfigValue('addToHistory', data.addToHistory);
         YouTube2Context_1.default.setConfigValue('liveStreamQuality', data.liveStreamQuality.value);
         YouTube2Context_1.default.setConfigValue('prefetch', data.prefetch);

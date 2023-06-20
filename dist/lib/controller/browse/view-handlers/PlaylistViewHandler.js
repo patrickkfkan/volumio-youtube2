@@ -10,7 +10,7 @@ class PlaylistViewHandler extends GenericViewHandler_1.default {
         const endpoint = this.assertEndpointExists(this.getEndpoint());
         const model = this.getModel(model_1.ModelType.Playlist);
         const contents = await model.getContents(endpoint);
-        return this.assertPageOrContinuationContents(contents);
+        return this.assertPageContents(contents);
     }
     getEndpoint(explode) {
         const view = this.currentView;

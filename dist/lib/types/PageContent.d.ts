@@ -1,6 +1,7 @@
 import { PageElement } from '.';
 interface PageContent {
-    type: 'page' | 'continuation';
+    type: 'page';
+    isContinuation: boolean;
     header?: PageElement.Header;
     sections: PageElement.Section[];
     tabs?: PageElement.Tab[];

@@ -325,11 +325,13 @@ _PlayController_mpdPlugin = new WeakMap(), _PlayController_autoplayListener = ne
     return -1;
 }, _PlayController_getAutoplayItems = async function _PlayController_getAutoplayItems() {
     const lastPlayedEndpoint = __classPrivateFieldGet(this, _PlayController_instances, "m", _PlayController_getExplodedTrackInfoFromUri).call(this, __classPrivateFieldGet(this, _PlayController_lastPlaybackInfo, "f")?.track?.uri)?.endpoint;
-    if (!lastPlayedEndpoint?.payload?.videoId) {
+    const videoId = lastPlayedEndpoint?.payload?.videoId;
+    if (!videoId) {
         return [];
     }
+    YouTube2Context_1.default.getLogger().info(`[youtube2-play] Obtaining autoplay videos for ${videoId}`);
     const autoplayPayload = {
-        videoId: lastPlayedEndpoint.payload.videoId
+        videoId
     };
     if (lastPlayedEndpoint.payload.playlistId) {
         autoplayPayload.playlistId = lastPlayedEndpoint.payload.playlistId;
@@ -347,12 +349,49 @@ _PlayController_mpdPlugin = new WeakMap(), _PlayController_autoplayListener = ne
     const endpointModel = model_1.default.getInstance(model_1.ModelType.Endpoint);
     const contents = await endpointModel.getContents(autoplayFetchEndpoint);
     const autoplayItems = [];
+    // Get from current playlist, if any.
     if (contents?.playlist) {
         const currentIndex = contents.playlist.currentIndex || 0;
         const itemsAfter = contents.playlist.items?.slice(currentIndex + 1).filter((item) => item.type === 'video') || [];
         const explodedTrackInfos = itemsAfter.map((item) => ExplodeHelper_1.default.getExplodedTrackInfoFromVideo(item));
         autoplayItems.push(...explodedTrackInfos);
+        YouTube2Context_1.default.getLogger().info(`[youtube2-play] Obtained ${autoplayItems.length} videos for autoplay from current playlist`);
     }
+    /**
+     * If there are no items added, that means playlist doesn't exist or has
+     * reached the end. From here, we obtain the autoplay video in the following
+     * order of priority:
+     *
+     * 1. Videos in a Mix playlist that appears in the Related section
+     * 2. Any video in Related section
+     * 3. YouTube default
+     *
+     * (1 and 2 subject to plugin config)
+     */
+    const autoplayPrefMixRelated = YouTube2Context_1.default.getConfigValue('autoplayPrefMixRelated', false);
+    const relatedItems = contents?.related?.items;
+    // 1. Mix
+    if (autoplayItems.length === 0 && relatedItems && autoplayPrefMixRelated) {
+        const mixPlaylist = relatedItems.find((item) => item.type === 'playlist' && item.isMix);
+        if (mixPlaylist?.endpoint && mixPlaylist.endpoint.type === Endpoint_1.EndpointType.Watch) {
+            // Get videos in the Mix playlist
+            const mixPlaylistContents = await endpointModel.getContents({ ...mixPlaylist.endpoint, type: mixPlaylist.endpoint.type });
+            if (mixPlaylistContents?.playlist?.items) {
+                const mixes = mixPlaylistContents.playlist.items.filter((item) => item.videoId !== videoId);
+                autoplayItems.push(...mixes.map((item) => ExplodeHelper_1.default.getExplodedTrackInfoFromVideo(item)));
+                YouTube2Context_1.default.getLogger().info(`[youtube2-play] Obtained ${autoplayItems.length} videos for autoplay from Mix playlist ${mixPlaylist.playlistId}`);
+            }
+        }
+    }
+    // 2. Related
+    if (autoplayItems.length === 0 && relatedItems && autoplayPrefMixRelated) {
+        const relatedVideos = relatedItems.filter((item) => item.type === 'video');
+        if (relatedVideos) {
+            autoplayItems.push(...relatedVideos.map((item) => ExplodeHelper_1.default.getExplodedTrackInfoFromVideo(item)));
+            YouTube2Context_1.default.getLogger().info(`[youtube2-play] Obtained ${autoplayItems.length} related videos for autoplay`);
+        }
+    }
+    // 3. YouTube default
     if (autoplayItems.length === 0 && contents?.autoplay?.payload?.videoId) {
         const videoModel = model_1.default.getInstance(model_1.ModelType.Video);
         // Contents.autoplay is just an endpoint, so we need to get video info (title, author...) from it
@@ -365,6 +404,7 @@ _PlayController_mpdPlugin = new WeakMap(), _PlayController_autoplayListener = ne
                 endpoint: contents.autoplay
             });
         }
+        YouTube2Context_1.default.getLogger().info('[youtube2-play] Used YouTube default result for autoplay');
     }
     if (autoplayItems.length > 0) {
         return autoplayItems.map((item) => ExplodeHelper_1.default.createQueueItemFromExplodedTrackInfo(item));

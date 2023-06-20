@@ -41,7 +41,10 @@ class PlaylistModel extends EndpointModel_1.default {
 }
 exports.default = PlaylistModel;
 _PlaylistModel_instances = new WeakSet(), _PlaylistModel_getContinuationItems = async function _PlaylistModel_getContinuationItems(continuation, recursive = true, currentItems = []) {
-    const contents = await this.getContents({ ...continuation.endpoint });
+    if (!continuation) {
+        return [];
+    }
+    const contents = await this.getContents({ ...continuation.endpoint, type: Endpoint_1.EndpointType.BrowseContinuation });
     // There should only be one section for playlist continuation items
     const targetSection = contents?.sections?.[0];
     if (targetSection?.items) {

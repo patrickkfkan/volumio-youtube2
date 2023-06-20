@@ -1,9 +1,9 @@
 import { IBrowseResponse, INextResponse, ISearchResponse, YTNodes, Misc as YTMisc, Utils as YTUtils, Helpers as YTHelpers } from 'volumio-youtubei.js';
 import Endpoint, { EndpointType } from '../types/Endpoint';
-import WatchContent from '../types/WatchContent';
+import WatchContent, { WatchContinuationContent } from '../types/WatchContent';
 import PageContent from '../types/PageContent';
 import { ContentItem, PageElement } from '../types';
-import { SectionItem } from '../types/PageElement';
+import { Continuation, SectionItem } from '../types/PageElement';
 
 type ParseableInnertubeResponse = INextResponse | ISearchResponse | IBrowseResponse;
 
@@ -36,15 +36,20 @@ export default class InnertubeResultParser {
   static parseResult(data: ParseableInnertubeResponse | { contents: any },
     originatingEndpointType?: EndpointType.Browse | EndpointType.BrowseContinuation | EndpointType.Search | EndpointType.SearchContinuation) : PageContent | null;
   static parseResult(data: ParseableInnertubeResponse | { contents: any },
-    originatingEndpointType: EndpointType.Watch) : WatchContent | null;
+    originatingEndpointType: EndpointType.Watch ) : WatchContent | null;
   static parseResult(data: ParseableInnertubeResponse | { contents: any },
-    originatingEndpointType?: EndpointType): PageContent | WatchContent | null;
+    originatingEndpointType: EndpointType.WatchContinuation ) : WatchContinuationContent | null;
+  static parseResult(data: ParseableInnertubeResponse | { contents: any },
+    originatingEndpointType?: EndpointType): PageContent | WatchContent | WatchContinuationContent | null;
   static parseResult(data: ParseableInnertubeResponse | { contents: any },
     originatingEndpointType?: EndpointType) {
 
     switch (originatingEndpointType) {
       case EndpointType.Watch:
         return this.#parseWatchEndpointResult(data as INextResponse);
+
+      case EndpointType.WatchContinuation:
+        return this.#parseWatchContinuationEndpointResult(data as INextResponse);
 
       case EndpointType.Search:
         return this.#parseSearchEndpointResult(data as ISearchResponse);
@@ -55,16 +60,56 @@ export default class InnertubeResultParser {
     }
   }
 
+  static #parseWatchContinuationEndpointResult(data: INextResponse): WatchContinuationContent | null {
+    const itemContinuations = data.on_response_received_endpoints || null;
+
+    if (itemContinuations && itemContinuations.length > 0) {
+      const actions = itemContinuations.filter((c) =>
+        c.type === 'appendContinuationItemsAction');
+      if (actions) {
+        const acItems = actions.reduce<YTHelpers.YTNode[]>((result, ac) => {
+          if (ac.contents) {
+            result.push(...ac.contents);
+          }
+          return result;
+        }, []);
+        const parsedItems = acItems.reduce<WatchContinuationContent['items']>((result, item) => {
+          const parsedItem = this.#parseContentItem(item);
+          if (parsedItem && (parsedItem.type === 'video' || parsedItem.type === 'playlist')) {
+            result.push(parsedItem);
+          }
+          return result;
+        }, []);
+        const watchContinuationContent: WatchContinuationContent = {
+          type: 'watch',
+          isContinuation: true,
+          items: parsedItems
+        };
+        const continuationItem = acItems.find((item) => item.type === 'ContinuationItem') as YTNodes.ContinuationItem;
+        const parsedContinuation = this.#parseContinuationItem(continuationItem);
+        if (parsedContinuation && parsedContinuation.endpoint.type === EndpointType.WatchContinuation) {
+          watchContinuationContent.continuation = parsedContinuation as Continuation<typeof parsedContinuation.endpoint.type>;
+        }
+
+        return watchContinuationContent;
+      }
+    }
+
+    return null;
+  }
+
   static #parseWatchEndpointResult(data: INextResponse): WatchContent | null {
     const dataContents = this.unwrap(data.contents);
     if (!dataContents) {
       return null;
     }
 
-    const result: WatchContent = { type: 'watch' };
+    const result: WatchContent = { type: 'watch', isContinuation: false };
 
     if (!Array.isArray(dataContents) && dataContents.type === 'TwoColumnWatchNextResults') {
       const twoColumnWatchNextResults = dataContents as YTNodes.TwoColumnWatchNextResults;
+
+      // Playlist items
       const playlistData = twoColumnWatchNextResults.playlist;
       if (playlistData) {
         const playlistItems = playlistData.contents.reduce<ContentItem.Video[]>((items, itemData) => {
@@ -87,9 +132,27 @@ export default class InnertubeResultParser {
         }
       }
 
+      // Autoplay item
       const autoplayEndpoint = this.parseEndpoint(twoColumnWatchNextResults.autoplay?.sets[0].autoplay_video);
       if (autoplayEndpoint) {
         result.autoplay = autoplayEndpoint;
+      }
+
+      // Related
+      // - If user is signed out, related items appear directly under secondary_results
+      // - If user is signed in, related items appear in ItemSection under secondary_results
+      const itemSection = twoColumnWatchNextResults.secondary_results.firstOfType(YTNodes.ItemSection);
+      const relatedItemList = itemSection ? itemSection.contents : twoColumnWatchNextResults.secondary_results;
+      if (relatedItemList) {
+        const parsedItems = relatedItemList.map((item) => this.#parseContentItem(item));
+        result.related = {
+          items: parsedItems.filter((item) => item?.type === 'video' || item?.type === 'playlist') as (ContentItem.Video | ContentItem.Playlist)[]
+        };
+        const continuationItem = relatedItemList.find((item) => item.type === 'ContinuationItem') as YTNodes.ContinuationItem;
+        const parsedContinuation = this.#parseContinuationItem(continuationItem);
+        if (parsedContinuation && parsedContinuation.endpoint.type === EndpointType.WatchContinuation) {
+          result.related.continuation = parsedContinuation as Continuation<typeof parsedContinuation.endpoint.type>;
+        }
       }
 
       return result;
@@ -132,7 +195,8 @@ export default class InnertubeResultParser {
         }, []);
         if (sections) {
           return {
-            type: 'continuation',
+            type: 'page',
+            isContinuation: true,
             sections
           };
         }
@@ -142,6 +206,7 @@ export default class InnertubeResultParser {
 
     const result: PageContent = {
       type: 'page',
+      isContinuation: false,
       sections: []
     };
 
@@ -394,8 +459,9 @@ export default class InnertubeResultParser {
       }
       else if (contentItem.type === 'ContinuationItem') {
         const continuationItem = this.#parseContinuationItem(contentItem as YTNodes.ContinuationItem);
-        if (continuationItem) {
-          section.continuation = continuationItem;
+        if (continuationItem && (continuationItem.endpoint.type === EndpointType.BrowseContinuation ||
+          continuationItem.endpoint.type === EndpointType.SearchContinuation)) {
+          section.continuation = continuationItem as Continuation<typeof continuationItem.endpoint.type>;
         }
       }
       else {
@@ -610,6 +676,7 @@ export default class InnertubeResultParser {
 
     switch (data.type) {
       case 'Video':
+      case 'CompactVideo':
       case 'VideoCard':
       case 'GridVideo':
       case 'PlaylistVideo':
@@ -617,6 +684,7 @@ export default class InnertubeResultParser {
       case 'PlaylistPanelVideo': // Published / viewCount will be null
       case 'GridMovie': // Published / viewCount will be null
         const vData = data as YTNodes.Video &
+                              YTNodes.CompactVideo &
                               YTNodes.VideoCard &
                               YTNodes.GridVideo &
                               YTNodes.PlaylistVideo &
@@ -663,10 +731,12 @@ export default class InnertubeResultParser {
       case 'GridPlaylist':
       case 'Mix':
       case 'GridMix':
+      case 'CompactMix':
         const plData = data as YTNodes.Playlist &
                                YTNodes.GridPlaylist &
                                YTNodes.Mix &
-                               YTNodes.GridMix;
+                               YTNodes.GridMix &
+                               YTNodes.CompactMix;
         const playlistItem = {
           type: 'playlist',
           playlistId: plData.id,
@@ -674,7 +744,8 @@ export default class InnertubeResultParser {
           thumbnail: this.parseThumbnail(plData.thumbnails) || null,
           author: this.#parseAuthor(plData.author),
           videoCount: this.unwrap(plData.video_count),
-          endpoint: this.parseEndpoint(plData.endpoint) // Watch endpoint
+          endpoint: this.parseEndpoint(plData.endpoint), // Watch endpoint
+          isMix: data.type.includes('Mix')
         } as ContentItem.Playlist;
 
         const plBrowseEndpoint = this.parseEndpoint(plData.view_playlist?.endpoint);
@@ -774,13 +845,17 @@ export default class InnertubeResultParser {
     return null;
   }
 
-  static #parseContinuationItem(data: YTNodes.ContinuationItem): PageElement.Continuation | null {
+  static #parseContinuationItem(data: YTNodes.ContinuationItem) {
+    if (!data) {
+      return null;
+    }
     const endpoint = this.parseEndpoint(data.endpoint);
-    if (!endpoint || (endpoint.type !== EndpointType.BrowseContinuation && endpoint.type !== EndpointType.SearchContinuation)) {
+    if (!endpoint || (endpoint.type !== EndpointType.BrowseContinuation &&
+      endpoint.type !== EndpointType.SearchContinuation && endpoint.type !== EndpointType.WatchContinuation)) {
       return null;
     }
 
-    const result: PageElement.Continuation = {
+    const result: PageElement.Continuation<typeof endpoint.type> = {
       type: 'continuation',
       endpoint: { ...endpoint, type: endpoint.type }
     };
@@ -897,6 +972,17 @@ export default class InnertubeResultParser {
           type: EndpointType.Watch,
           payload: createPayload([ 'videoId', 'playlistId', 'params', 'index' ])
         };
+
+      case 'next':
+        if (data?.payload?.request === 'CONTINUATION_REQUEST_TYPE_WATCH_NEXT') {
+          return {
+            type: EndpointType.WatchContinuation,
+            payload: {
+              token: data.payload.token
+            }
+          };
+        }
+        break;
 
       default:
     }

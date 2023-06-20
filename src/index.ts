@@ -160,16 +160,18 @@ class ControllerYouTube2 {
         // Playback
         const autoplay = yt2.getConfigValue('autoplay', false);
         const autoplayClearQueue = yt2.getConfigValue('autoplayClearQueue', false);
+        const autoplayPrefMixRelated = yt2.getConfigValue('autoplayPrefMixRelated', false);
         const addToHistory = yt2.getConfigValue('addToHistory', true);
         const liveStreamQuality = yt2.getConfigValue('liveStreamQuality', 'auto');
         const liveStreamQualityOptions = configModel.getLiveStreamQualityOptions();
         const prefetchEnabled = yt2.getConfigValue('prefetch', true);
         playbackUIConf.content[0].value = autoplay;
         playbackUIConf.content[1].value = autoplayClearQueue;
-        playbackUIConf.content[2].value = addToHistory;
-        playbackUIConf.content[3].options = liveStreamQualityOptions;
-        playbackUIConf.content[3].value = liveStreamQualityOptions.find((o) => o.value === liveStreamQuality);
-        playbackUIConf.content[4].value = prefetchEnabled;
+        playbackUIConf.content[2].value = autoplayPrefMixRelated;
+        playbackUIConf.content[3].value = addToHistory;
+        playbackUIConf.content[4].options = liveStreamQualityOptions;
+        playbackUIConf.content[4].value = liveStreamQualityOptions.find((o) => o.value === liveStreamQuality);
+        playbackUIConf.content[5].value = prefetchEnabled;
 
         defer.resolve(uiconf);
       })
@@ -331,6 +333,7 @@ class ControllerYouTube2 {
   configSavePlayback(data: any) {
     yt2.setConfigValue('autoplay', data.autoplay);
     yt2.setConfigValue('autoplayClearQueue', data.autoplayClearQueue);
+    yt2.setConfigValue('autoplayPrefMixRelated', data.autoplayPrefMixRelated);
     yt2.setConfigValue('addToHistory', data.addToHistory);
     yt2.setConfigValue('liveStreamQuality', data.liveStreamQuality.value);
     yt2.setConfigValue('prefetch', data.prefetch);
