@@ -15,6 +15,7 @@ declare class ControllerYouTube2 {
     configSignOut: () => void;
     configSaveBrowse: (data: any) => void;
     configSavePlayback(data: any): void;
+    configEnableAddToHistory(): void;
     handleBrowseUri(uri: string): any;
     explodeUri(uri: string): any;
     clearAddPlayTrack(track: any): any;

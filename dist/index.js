@@ -36,7 +36,7 @@ var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-var _ControllerYouTube2_instances, _ControllerYouTube2_context, _ControllerYouTube2_config, _ControllerYouTube2_commandRouter, _ControllerYouTube2_browseController, _ControllerYouTube2_searchController, _ControllerYouTube2_playController, _ControllerYouTube2_initInnertube, _ControllerYouTube2_applyI18nConfigToInnerTube, _ControllerYouTube2_getConfigI18nOptions, _ControllerYouTube2_getConfigAccountInfo, _ControllerYouTube2_addToBrowseSources;
+var _ControllerYouTube2_instances, _ControllerYouTube2_context, _ControllerYouTube2_config, _ControllerYouTube2_commandRouter, _ControllerYouTube2_browseController, _ControllerYouTube2_searchController, _ControllerYouTube2_playController, _ControllerYouTube2_initInnertube, _ControllerYouTube2_applyI18nConfigToInnerTube, _ControllerYouTube2_getConfigI18nOptions, _ControllerYouTube2_getConfigAccountInfo, _ControllerYouTube2_configCheckAutoplay, _ControllerYouTube2_addToBrowseSources;
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 const kew_1 = __importDefault(require("kew"));
@@ -264,6 +264,12 @@ class ControllerYouTube2 {
         YouTube2Context_1.default.setConfigValue('liveStreamQuality', data.liveStreamQuality.value);
         YouTube2Context_1.default.setConfigValue('prefetch', data.prefetch);
         YouTube2Context_1.default.toast('success', YouTube2Context_1.default.getI18n('YOUTUBE2_SETTINGS_SAVED'));
+        __classPrivateFieldGet(this, _ControllerYouTube2_instances, "m", _ControllerYouTube2_configCheckAutoplay).call(this);
+    }
+    configEnableAddToHistory() {
+        YouTube2Context_1.default.setConfigValue('addToHistory', true);
+        YouTube2Context_1.default.toast('success', YouTube2Context_1.default.getI18n('YOUTUBE2_SETTINGS_SAVED'));
+        YouTube2Context_1.default.refreshUIConfig();
     }
     handleBrowseUri(uri) {
         if (!__classPrivateFieldGet(this, _ControllerYouTube2_browseController, "f")) {
@@ -416,6 +422,32 @@ _ControllerYouTube2_context = new WeakMap(), _ControllerYouTube2_config = new We
         defer.resolve(null);
     });
     return defer.promise;
+}, _ControllerYouTube2_configCheckAutoplay = function _ControllerYouTube2_configCheckAutoplay() {
+    const addToHistory = YouTube2Context_1.default.getConfigValue('addToHistory', true);
+    const autoplay = YouTube2Context_1.default.getConfigValue('autoplay', false);
+    if (autoplay && !addToHistory) {
+        const modalData = {
+            title: YouTube2Context_1.default.getI18n('YOUTUBE2_AUTOPLAY'),
+            message: YouTube2Context_1.default.getI18n('YOUTUBE2_MSG_AUTOPLAY_ADD_TO_HISTORY'),
+            size: 'lg',
+            buttons: [
+                {
+                    name: YouTube2Context_1.default.getI18n('YOUTUBE2_CONFIRM_ADD_TO_HISTORY'),
+                    class: 'btn btn-info',
+                    emit: 'callMethod',
+                    payload: {
+                        endpoint: 'music_service/youtube2',
+                        method: 'configEnableAddToHistory'
+                    }
+                },
+                {
+                    name: YouTube2Context_1.default.getI18n('YOUTUBE2_NO'),
+                    class: 'btn'
+                }
+            ]
+        };
+        __classPrivateFieldGet(this, _ControllerYouTube2_commandRouter, "f").broadcastMessage('openModal', modalData);
+    }
 }, _ControllerYouTube2_addToBrowseSources = function _ControllerYouTube2_addToBrowseSources() {
     const source = {
         name: 'YouTube2',

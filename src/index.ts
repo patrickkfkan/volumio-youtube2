@@ -339,6 +339,44 @@ class ControllerYouTube2 {
     yt2.setConfigValue('prefetch', data.prefetch);
 
     yt2.toast('success', yt2.getI18n('YOUTUBE2_SETTINGS_SAVED'));
+
+    this.#configCheckAutoplay();
+  }
+
+  #configCheckAutoplay() {
+    const addToHistory = yt2.getConfigValue<boolean>('addToHistory', true);
+    const autoplay = yt2.getConfigValue<boolean>('autoplay', false);
+
+    if (autoplay && !addToHistory) {
+      const modalData = {
+        title: yt2.getI18n('YOUTUBE2_AUTOPLAY'),
+        message: yt2.getI18n('YOUTUBE2_MSG_AUTOPLAY_ADD_TO_HISTORY'),
+        size: 'lg',
+        buttons: [
+          {
+            name: yt2.getI18n('YOUTUBE2_CONFIRM_ADD_TO_HISTORY'),
+            class: 'btn btn-info',
+            emit: 'callMethod',
+            payload: {
+              endpoint: 'music_service/youtube2',
+              method: 'configEnableAddToHistory'
+            }
+          },
+          {
+            name: yt2.getI18n('YOUTUBE2_NO'),
+            class: 'btn'
+          }
+        ]
+      };
+
+      this.#commandRouter.broadcastMessage('openModal', modalData);
+    }
+  }
+
+  configEnableAddToHistory() {
+    yt2.setConfigValue('addToHistory', true);
+    yt2.toast('success', yt2.getI18n('YOUTUBE2_SETTINGS_SAVED'));
+    yt2.refreshUIConfig();
   }
 
   #addToBrowseSources() {
