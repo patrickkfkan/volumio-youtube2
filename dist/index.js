@@ -454,7 +454,7 @@ _ControllerYouTube2_context = new WeakMap(), _ControllerYouTube2_config = new We
         uri: 'youtube2',
         plugin_type: 'music_service',
         plugin_name: 'youtube2',
-        albumart: '/albumart?sourceicon=music_service/youtube2/assets/images/youtube.svg'
+        albumart: '/albumart?sourceicon=music_service/youtube2/dist/assets/images/youtube.svg'
     };
     __classPrivateFieldGet(this, _ControllerYouTube2_commandRouter, "f").volumioAddToBrowseSources(source);
 };

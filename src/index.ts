@@ -385,7 +385,7 @@ class ControllerYouTube2 {
       uri: 'youtube2',
       plugin_type: 'music_service',
       plugin_name: 'youtube2',
-      albumart: '/albumart?sourceicon=music_service/youtube2/assets/images/youtube.svg'
+      albumart: '/albumart?sourceicon=music_service/youtube2/dist/assets/images/youtube.svg'
     };
     this.#commandRouter.volumioAddToBrowseSources(source);
   }
