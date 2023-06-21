@@ -86,10 +86,10 @@ class PlayController {
         }, "f");
         const safeStreamUrl = stream.url.replace(/"/g, '\\"');
         await __classPrivateFieldGet(this, _PlayController_instances, "m", _PlayController_doPlay).call(this, safeStreamUrl, track);
-        if (YouTube2Context_1.default.getConfigValue('autoplay', false)) {
+        if (YouTube2Context_1.default.getConfigValue('autoplay')) {
             __classPrivateFieldGet(this, _PlayController_instances, "m", _PlayController_addAutoplayListener).call(this);
         }
-        if (YouTube2Context_1.default.getConfigValue('addToHistory', true)) {
+        if (YouTube2Context_1.default.getConfigValue('addToHistory')) {
             try {
                 playbackInfo.addToHistory();
             }
@@ -168,7 +168,7 @@ class PlayController {
         return null;
     }
     async prefetch(track) {
-        const prefetchEnabled = YouTube2Context_1.default.getConfigValue('prefetch', true);
+        const prefetchEnabled = YouTube2Context_1.default.getConfigValue('prefetch');
         if (!prefetchEnabled) {
             /**
              * Volumio doesn't check whether `prefetch()` is actually performed or
@@ -285,7 +285,7 @@ _PlayController_mpdPlugin = new WeakMap(), _PlayController_autoplayListener = ne
         return;
     }
     const stateMachine = YouTube2Context_1.default.getStateMachine(), state = stateMachine.getState(), isLastTrack = stateMachine.getQueue().length - 1 === lastPlayedQueueIndex, currentPositionChanged = state.position !== lastPlayedQueueIndex; // True if client clicks on another item in the queue
-    const noAutoplayConditions = !YouTube2Context_1.default.getConfigValue('autoplay', false) || currentPositionChanged || !isLastTrack || state.random || state.repeat || state.repeatSingle;
+    const noAutoplayConditions = !YouTube2Context_1.default.getConfigValue('autoplay') || currentPositionChanged || !isLastTrack || state.random || state.repeat || state.repeatSingle;
     const getAutoplayItemsPromise = noAutoplayConditions ? Promise.resolve(null) : __classPrivateFieldGet(this, _PlayController_instances, "m", _PlayController_getAutoplayItems).call(this);
     if (!noAutoplayConditions) {
         YouTube2Context_1.default.toast('info', YouTube2Context_1.default.getI18n('YOUTUBE2_AUTOPLAY_FETCH'));
@@ -293,7 +293,7 @@ _PlayController_mpdPlugin = new WeakMap(), _PlayController_autoplayListener = ne
     const items = await getAutoplayItemsPromise;
     if (items && items.length > 0) {
         // Add items to queue and play
-        const clearQueue = YouTube2Context_1.default.getConfigValue('autoplayClearQueue', false);
+        const clearQueue = YouTube2Context_1.default.getConfigValue('autoplayClearQueue');
         if (clearQueue) {
             stateMachine.clearQueue();
         }
@@ -368,7 +368,7 @@ _PlayController_mpdPlugin = new WeakMap(), _PlayController_autoplayListener = ne
      *
      * (1 and 2 subject to plugin config)
      */
-    const autoplayPrefMixRelated = YouTube2Context_1.default.getConfigValue('autoplayPrefMixRelated', false);
+    const autoplayPrefMixRelated = YouTube2Context_1.default.getConfigValue('autoplayPrefMixRelated');
     const relatedItems = contents?.related?.items;
     // 1. Mix
     if (autoplayItems.length === 0 && relatedItems && autoplayPrefMixRelated) {

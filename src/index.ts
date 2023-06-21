@@ -150,21 +150,21 @@ class ControllerYouTube2 {
         accountUIConf.description = authStatusDescription;
 
         // Browse
-        const rootContentType = yt2.getConfigValue('rootContentType', 'full');
+        const rootContentType = yt2.getConfigValue('rootContentType');
         const rootContentTypeOptions = configModel.getRootContentTypeOptions();
-        const loadFullPlaylists = yt2.getConfigValue('loadFullPlaylists', false);
+        const loadFullPlaylists = yt2.getConfigValue('loadFullPlaylists');
         browseUIConf.content[0].options = rootContentTypeOptions;
         browseUIConf.content[0].value = rootContentTypeOptions.find((o) => o.value === rootContentType);
         browseUIConf.content[1].value = loadFullPlaylists;
 
         // Playback
-        const autoplay = yt2.getConfigValue('autoplay', false);
-        const autoplayClearQueue = yt2.getConfigValue('autoplayClearQueue', false);
-        const autoplayPrefMixRelated = yt2.getConfigValue('autoplayPrefMixRelated', false);
-        const addToHistory = yt2.getConfigValue('addToHistory', true);
-        const liveStreamQuality = yt2.getConfigValue('liveStreamQuality', 'auto');
+        const autoplay = yt2.getConfigValue('autoplay');
+        const autoplayClearQueue = yt2.getConfigValue('autoplayClearQueue');
+        const autoplayPrefMixRelated = yt2.getConfigValue('autoplayPrefMixRelated');
+        const addToHistory = yt2.getConfigValue('addToHistory');
+        const liveStreamQuality = yt2.getConfigValue('liveStreamQuality');
         const liveStreamQualityOptions = configModel.getLiveStreamQualityOptions();
-        const prefetchEnabled = yt2.getConfigValue('prefetch', true);
+        const prefetchEnabled = yt2.getConfigValue('prefetch');
         playbackUIConf.content[0].value = autoplay;
         playbackUIConf.content[1].value = autoplayClearQueue;
         playbackUIConf.content[2].value = autoplayPrefMixRelated;
@@ -248,8 +248,8 @@ class ControllerYouTube2 {
   #applyI18nConfigToInnerTube = function () {
     const innertube = yt2.get<Innertube>('innertube');
     if (innertube) {
-      const region = yt2.getConfigValue('region', 'US');
-      const language = yt2.getConfigValue('language', 'en');
+      const region = yt2.getConfigValue('region');
+      const language = yt2.getConfigValue('language');
 
       innertube.session.context.client.gl = region;
       innertube.session.context.client.hl = language;
@@ -266,8 +266,8 @@ class ControllerYouTube2 {
     const model = Model.getInstance(ModelType.Config);
     model.getI18nOptions().then((options) => {
       const selectedValues = {
-        region: yt2.getConfigValue('region', 'US'),
-        language: yt2.getConfigValue('language', 'en')
+        region: yt2.getConfigValue('region'),
+        language: yt2.getConfigValue('language')
       };
       const selected: Record<keyof I18nOptions, I18nOptionValue> = {
         region: { label: '', value: '' },
@@ -302,8 +302,8 @@ class ControllerYouTube2 {
   }
 
   configSaveI18n(data: any) {
-    const oldRegion = yt2.getConfigValue('region', null);
-    const oldLanguage = yt2.getConfigValue('language', null);
+    const oldRegion = yt2.hasConfigValue('region') ? yt2.getConfigValue('region') : null;
+    const oldLanguage = yt2.hasConfigValue('language') ? yt2.getConfigValue('language') : null;
     const region = data.region.value;
     const language = data.language.value;
 
@@ -344,8 +344,8 @@ class ControllerYouTube2 {
   }
 
   #configCheckAutoplay() {
-    const addToHistory = yt2.getConfigValue<boolean>('addToHistory', true);
-    const autoplay = yt2.getConfigValue<boolean>('autoplay', false);
+    const addToHistory = yt2.getConfigValue('addToHistory');
+    const autoplay = yt2.getConfigValue('autoplay');
 
     if (autoplay && !addToHistory) {
       const modalData = {

@@ -93,11 +93,11 @@ export default class PlayController {
     const safeStreamUrl = stream.url.replace(/"/g, '\\"');
     await this.#doPlay(safeStreamUrl, track);
 
-    if (yt2.getConfigValue('autoplay', false)) {
+    if (yt2.getConfigValue('autoplay')) {
       this.#addAutoplayListener();
     }
 
-    if (yt2.getConfigValue('addToHistory', true)) {
+    if (yt2.getConfigValue('addToHistory')) {
       try {
         playbackInfo.addToHistory();
       }
@@ -226,7 +226,7 @@ export default class PlayController {
       isLastTrack = stateMachine.getQueue().length - 1 === lastPlayedQueueIndex,
       currentPositionChanged = state.position !== lastPlayedQueueIndex; // True if client clicks on another item in the queue
 
-    const noAutoplayConditions = !yt2.getConfigValue('autoplay', false) || currentPositionChanged || !isLastTrack || state.random || state.repeat || state.repeatSingle;
+    const noAutoplayConditions = !yt2.getConfigValue('autoplay') || currentPositionChanged || !isLastTrack || state.random || state.repeat || state.repeatSingle;
     const getAutoplayItemsPromise = noAutoplayConditions ? Promise.resolve(null) : this.#getAutoplayItems();
 
     if (!noAutoplayConditions) {
@@ -236,7 +236,7 @@ export default class PlayController {
     const items = await getAutoplayItemsPromise;
     if (items && items.length > 0) {
       // Add items to queue and play
-      const clearQueue = yt2.getConfigValue('autoplayClearQueue', false);
+      const clearQueue = yt2.getConfigValue('autoplayClearQueue');
       if (clearQueue) {
         stateMachine.clearQueue();
       }
@@ -327,7 +327,7 @@ export default class PlayController {
      *
      * (1 and 2 subject to plugin config)
      */
-    const autoplayPrefMixRelated = yt2.getConfigValue<boolean>('autoplayPrefMixRelated', false);
+    const autoplayPrefMixRelated = yt2.getConfigValue('autoplayPrefMixRelated');
     const relatedItems = contents?.related?.items;
 
     // 1. Mix
@@ -417,7 +417,7 @@ export default class PlayController {
   }
 
   async prefetch(track: QueueItem) {
-    const prefetchEnabled = yt2.getConfigValue('prefetch', true);
+    const prefetchEnabled = yt2.getConfigValue('prefetch');
     if (!prefetchEnabled) {
       /**
        * Volumio doesn't check whether `prefetch()` is actually performed or

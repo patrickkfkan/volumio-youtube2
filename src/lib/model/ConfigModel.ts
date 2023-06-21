@@ -1,4 +1,4 @@
-import { Parser, RawNode, YTNodes, Misc as YTMisc } from 'volumio-youtubei.js';
+import { Parser, RawNode, YTNodes, Misc as YTMisc, Credentials } from 'volumio-youtubei.js';
 import yt2 from '../YouTube2Context';
 import { findInObject } from '../util';
 import { BaseModel } from './BaseModel';
@@ -6,6 +6,41 @@ import InnertubeResultParser from './InnertubeResultParser';
 import { ConfigData } from '../types';
 import { I18nOptions } from '../types/ConfigData';
 
+export type PluginConfigKey = keyof PluginConfigSchema;
+export type PluginConfigValue<T extends PluginConfigKey> = PluginConfigSchema[T]['defaultValue'];
+
+export interface PluginConfigSchemaEntry<T, U = false> {
+  defaultValue: T;
+  json: U;
+}
+
+export interface PluginConfigSchema {
+  region: PluginConfigSchemaEntry<string>;
+  language: PluginConfigSchemaEntry<string>;
+  rootContentType: PluginConfigSchemaEntry<'full' | 'simple'>,
+  loadFullPlaylists: PluginConfigSchemaEntry<boolean>;
+  autoplay: PluginConfigSchemaEntry<boolean>;
+  autoplayClearQueue: PluginConfigSchemaEntry<boolean>;
+  autoplayPrefMixRelated: PluginConfigSchemaEntry<boolean>;
+  addToHistory: PluginConfigSchemaEntry<boolean>;
+  liveStreamQuality: PluginConfigSchemaEntry<'auto' | '144p' | '240p' | '360p' | '480p' | '720p' | '1080p'>;
+  prefetch: PluginConfigSchemaEntry<boolean>;
+  authCredentials: PluginConfigSchemaEntry<Credentials | undefined, true>;
+}
+
+export const PLUGIN_CONFIG_SCHEMA: PluginConfigSchema = {
+  region: { defaultValue: 'US', json: false },
+  language: { defaultValue: 'en', json: false },
+  rootContentType: { defaultValue: 'full', json: false },
+  loadFullPlaylists: { defaultValue: false, json: false },
+  autoplay: { defaultValue: false, json: false },
+  autoplayClearQueue: { defaultValue: false, json: false },
+  autoplayPrefMixRelated: { defaultValue: false, json: false },
+  addToHistory: { defaultValue: true, json: false },
+  liveStreamQuality: { defaultValue: 'auto', json: false },
+  prefetch: { defaultValue: true, json: false },
+  authCredentials: { defaultValue: undefined, json: true }
+};
 
 export default class ConfigModel extends BaseModel {
 
