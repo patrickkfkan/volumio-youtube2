@@ -78,7 +78,7 @@ class YouTube2Context {
         }
         return result.trim();
     }
-    hasConfigValue(key) {
+    hasConfigKey(key) {
         return __classPrivateFieldGet(this, _YouTube2Context_pluginConfig, "f").has(key);
     }
     getConfigValue(key) {

@@ -77,7 +77,7 @@ class YouTube2Context {
     return result.trim();
   }
 
-  hasConfigValue<T extends PluginConfigKey>(key: T): boolean {
+  hasConfigKey<T extends PluginConfigKey>(key: T): boolean {
     return this.#pluginConfig.has(key);
   }
 

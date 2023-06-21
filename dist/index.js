@@ -243,8 +243,8 @@ class ControllerYouTube2 {
         return ['config.json'];
     }
     configSaveI18n(data) {
-        const oldRegion = YouTube2Context_1.default.hasConfigValue('region') ? YouTube2Context_1.default.getConfigValue('region') : null;
-        const oldLanguage = YouTube2Context_1.default.hasConfigValue('language') ? YouTube2Context_1.default.getConfigValue('language') : null;
+        const oldRegion = YouTube2Context_1.default.hasConfigKey('region') ? YouTube2Context_1.default.getConfigValue('region') : null;
+        const oldLanguage = YouTube2Context_1.default.hasConfigKey('language') ? YouTube2Context_1.default.getConfigValue('language') : null;
         const region = data.region.value;
         const language = data.language.value;
         if (oldRegion !== region || oldLanguage !== language) {

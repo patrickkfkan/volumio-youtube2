@@ -12,7 +12,7 @@ declare class YouTube2Context {
     refreshUIConfig(): void;
     getLogger(): winston.Logger;
     getErrorMessage(message: string, error: any, stack?: boolean): string;
-    hasConfigValue<T extends PluginConfigKey>(key: T): boolean;
+    hasConfigKey<T extends PluginConfigKey>(key: T): boolean;
     getConfigValue<T extends PluginConfigKey>(key: T): PluginConfigValue<T>;
     deleteConfigValue(key: string): void;
     setConfigValue<T extends PluginConfigKey>(key: T, value: PluginConfigValue<T>): void;

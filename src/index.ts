@@ -302,8 +302,8 @@ class ControllerYouTube2 {
   }
 
   configSaveI18n(data: any) {
-    const oldRegion = yt2.hasConfigValue('region') ? yt2.getConfigValue('region') : null;
-    const oldLanguage = yt2.hasConfigValue('language') ? yt2.getConfigValue('language') : null;
+    const oldRegion = yt2.hasConfigKey('region') ? yt2.getConfigValue('region') : null;
+    const oldLanguage = yt2.hasConfigKey('language') ? yt2.getConfigValue('language') : null;
     const region = data.region.value;
     const language = data.language.value;
 
