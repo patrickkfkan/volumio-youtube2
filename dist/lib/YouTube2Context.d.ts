@@ -1,5 +1,5 @@
 import winston from 'winston';
-import { PluginConfigKey, PluginConfigValue } from './model/ConfigModel';
+import { PluginConfigKey, PluginConfigValue } from './types/ConfigData';
 declare class YouTube2Context {
     #private;
     constructor();

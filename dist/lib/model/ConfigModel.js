@@ -26,6 +26,10 @@ exports.PLUGIN_CONFIG_SCHEMA = {
     addToHistory: { defaultValue: true, json: false },
     liveStreamQuality: { defaultValue: 'auto', json: false },
     prefetch: { defaultValue: true, json: false },
+    ytPlaybackMode: { defaultValue: {
+            feedVideos: true,
+            playlistVideos: false
+        }, json: true },
     authCredentials: { defaultValue: undefined, json: true }
 };
 class ConfigModel extends BaseModel_1.BaseModel {

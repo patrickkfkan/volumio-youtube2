@@ -1,7 +1,8 @@
 import format from 'string-format';
 import fs from 'fs-extra';
 import winston from 'winston';
-import { PLUGIN_CONFIG_SCHEMA, PluginConfigKey, PluginConfigValue } from './model/ConfigModel';
+import { PluginConfigKey, PluginConfigValue } from './types/ConfigData';
+import { PLUGIN_CONFIG_SCHEMA } from './model/ConfigModel';
 
 class YouTube2Context {
 
