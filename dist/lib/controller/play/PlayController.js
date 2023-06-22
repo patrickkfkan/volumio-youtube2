@@ -36,7 +36,7 @@ var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-var _PlayController_instances, _PlayController_mpdPlugin, _PlayController_autoplayListener, _PlayController_lastPlaybackInfo, _PlayController_addAutoplayListener, _PlayController_removeAutoplayListener, _PlayController_getExplodedTrackInfoFromUri, _PlayController_getPlaybackInfoFromUri, _PlayController_doPlay, _PlayController_mpdAddTags, _PlayController_handleAutoplay, _PlayController_findLastPlayedTrackQueueIndex, _PlayController_getAutoplayItems;
+var _PlayController_instances, _PlayController_mpdPlugin, _PlayController_autoplayListener, _PlayController_lastPlaybackInfo, _PlayController_addAutoplayListener, _PlayController_removeAutoplayListener, _PlayController_getExplodedTrackInfoFromUri, _PlayController_getPlaybackInfoFromUri, _PlayController_doPlay, _PlayController_appendTrackTypeToStreamUrl, _PlayController_mpdAddTags, _PlayController_handleAutoplay, _PlayController_findLastPlayedTrackQueueIndex, _PlayController_getAutoplayItems;
 Object.defineProperty(exports, "__esModule", { value: true });
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
@@ -197,7 +197,7 @@ class PlayController {
             return;
         }
         const mpdPlugin = __classPrivateFieldGet(this, _PlayController_mpdPlugin, "f");
-        return (0, util_1.kewToJSPromise)(mpdPlugin.sendMpdCommand(`addid "${streamUrl}"`, [])
+        return (0, util_1.kewToJSPromise)(mpdPlugin.sendMpdCommand(`addid "${__classPrivateFieldGet(this, _PlayController_instances, "m", _PlayController_appendTrackTypeToStreamUrl).call(this, streamUrl)}"`, [])
             .then((addIdResp) => __classPrivateFieldGet(this, _PlayController_instances, "m", _PlayController_mpdAddTags).call(this, addIdResp, track))
             .then(() => {
             YouTube2Context_1.default.getLogger().info(`[youtube2-play] Prefetched and added track to MPD queue: ${track.name}`);
@@ -251,13 +251,19 @@ _PlayController_mpdPlugin = new WeakMap(), _PlayController_autoplayListener = ne
         return mpdPlugin.sendMpdCommand('clear', []);
     })
         .then(() => {
-        return mpdPlugin.sendMpdCommand(`addid "${streamUrl}"`, []);
+        return mpdPlugin.sendMpdCommand(`addid "${__classPrivateFieldGet(this, _PlayController_instances, "m", _PlayController_appendTrackTypeToStreamUrl).call(this, streamUrl)}"`, []);
     })
         .then((addIdResp) => __classPrivateFieldGet(this, _PlayController_instances, "m", _PlayController_mpdAddTags).call(this, addIdResp, track))
         .then(() => {
         YouTube2Context_1.default.getStateMachine().setConsumeUpdateService('mpd', true, false);
         return mpdPlugin.sendMpdCommand('play', []);
     }));
+}, _PlayController_appendTrackTypeToStreamUrl = function _PlayController_appendTrackTypeToStreamUrl(url) {
+    /**
+     * Fool MPD plugin to return correct `trackType` in `parseTrackInfo()` by adding
+     * track type to URL query string as a dummy param.
+     */
+    return `${url}&t.YouTube`;
 }, _PlayController_mpdAddTags = function _PlayController_mpdAddTags(mpdAddIdResponse, track) {
     const songId = mpdAddIdResponse?.Id;
     if (songId !== undefined) {

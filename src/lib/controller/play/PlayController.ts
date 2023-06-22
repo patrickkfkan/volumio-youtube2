@@ -181,13 +181,21 @@ export default class PlayController {
         return mpdPlugin.sendMpdCommand('clear', []);
       })
       .then(() => {
-        return mpdPlugin.sendMpdCommand(`addid "${streamUrl}"`, []);
+        return mpdPlugin.sendMpdCommand(`addid "${this.#appendTrackTypeToStreamUrl(streamUrl)}"`, []);
       })
       .then((addIdResp: { Id: string }) => this.#mpdAddTags(addIdResp, track))
       .then(() => {
         yt2.getStateMachine().setConsumeUpdateService('mpd', true, false);
         return mpdPlugin.sendMpdCommand('play', []);
       }));
+  }
+
+  #appendTrackTypeToStreamUrl(url: string) {
+    /**
+     * Fool MPD plugin to return correct `trackType` in `parseTrackInfo()` by adding
+     * track type to URL query string as a dummy param.
+     */
+    return `${url}&t.YouTube`;
   }
 
   // Returns kew promise!
@@ -447,7 +455,7 @@ export default class PlayController {
     }
 
     const mpdPlugin = this.#mpdPlugin;
-    return kewToJSPromise(mpdPlugin.sendMpdCommand(`addid "${streamUrl}"`, [])
+    return kewToJSPromise(mpdPlugin.sendMpdCommand(`addid "${this.#appendTrackTypeToStreamUrl(streamUrl)}"`, [])
       .then((addIdResp: { Id: string }) => this.#mpdAddTags(addIdResp, track))
       .then(() => {
         yt2.getLogger().info(`[youtube2-play] Prefetched and added track to MPD queue: ${track.name}`);
