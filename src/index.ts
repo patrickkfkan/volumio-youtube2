@@ -62,6 +62,7 @@ class ControllerYouTube2 {
         const accountUIConf = uiconf.sections[1];
         const browseUIConf = uiconf.sections[2];
         const playbackUIConf = uiconf.sections[3];
+        const ytPlaybackModeConf = uiconf.sections[4];
 
         // I18n
         // -- region
@@ -172,6 +173,11 @@ class ControllerYouTube2 {
         playbackUIConf.content[4].options = liveStreamQualityOptions;
         playbackUIConf.content[4].value = liveStreamQualityOptions.find((o) => o.value === liveStreamQuality);
         playbackUIConf.content[5].value = prefetchEnabled;
+
+        // YouTube Playback Mode
+        const ytPlaybackMode = yt2.getConfigValue('ytPlaybackMode');
+        ytPlaybackModeConf.content[0].value = ytPlaybackMode.feedVideos;
+        ytPlaybackModeConf.content[1].value = ytPlaybackMode.playlistVideos;
 
         defer.resolve(uiconf);
       })
@@ -377,6 +383,15 @@ class ControllerYouTube2 {
     yt2.setConfigValue('addToHistory', true);
     yt2.toast('success', yt2.getI18n('YOUTUBE2_SETTINGS_SAVED'));
     yt2.refreshUIConfig();
+  }
+
+  configSaveYouTubePlaybackMode(data: any) {
+    yt2.setConfigValue('ytPlaybackMode', {
+      feedVideos: data.feedVideos,
+      playlistVideos: data.playlistVideos
+    });
+
+    yt2.toast('success', yt2.getI18n('YOUTUBE2_SETTINGS_SAVED'));
   }
 
   #addToBrowseSources() {

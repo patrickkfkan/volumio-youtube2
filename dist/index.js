@@ -102,6 +102,7 @@ class ControllerYouTube2 {
             const accountUIConf = uiconf.sections[1];
             const browseUIConf = uiconf.sections[2];
             const playbackUIConf = uiconf.sections[3];
+            const ytPlaybackModeConf = uiconf.sections[4];
             // I18n
             // -- region
             i18nUIConf.content[0].label = i18nOptions.options.region.label;
@@ -204,6 +205,10 @@ class ControllerYouTube2 {
             playbackUIConf.content[4].options = liveStreamQualityOptions;
             playbackUIConf.content[4].value = liveStreamQualityOptions.find((o) => o.value === liveStreamQuality);
             playbackUIConf.content[5].value = prefetchEnabled;
+            // YouTube Playback Mode
+            const ytPlaybackMode = YouTube2Context_1.default.getConfigValue('ytPlaybackMode');
+            ytPlaybackModeConf.content[0].value = ytPlaybackMode.feedVideos;
+            ytPlaybackModeConf.content[1].value = ytPlaybackMode.playlistVideos;
             defer.resolve(uiconf);
         })
             .fail((error) => {
@@ -270,6 +275,13 @@ class ControllerYouTube2 {
         YouTube2Context_1.default.setConfigValue('addToHistory', true);
         YouTube2Context_1.default.toast('success', YouTube2Context_1.default.getI18n('YOUTUBE2_SETTINGS_SAVED'));
         YouTube2Context_1.default.refreshUIConfig();
+    }
+    configSaveYouTubePlaybackMode(data) {
+        YouTube2Context_1.default.setConfigValue('ytPlaybackMode', {
+            feedVideos: data.feedVideos,
+            playlistVideos: data.playlistVideos
+        });
+        YouTube2Context_1.default.toast('success', YouTube2Context_1.default.getI18n('YOUTUBE2_SETTINGS_SAVED'));
     }
     handleBrowseUri(uri) {
         if (!__classPrivateFieldGet(this, _ControllerYouTube2_browseController, "f")) {
