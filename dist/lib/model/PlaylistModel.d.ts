@@ -1,5 +1,7 @@
+import { PageElement } from '../types';
 import Endpoint, { EndpointType } from '../types/Endpoint';
 import PageContent from '../types/PageContent';
+import { SectionItem } from '../types/PageElement';
 import WatchContent, { WatchContinuationContent } from '../types/WatchContent';
 import EndpointModel from './EndpointModel';
 export default class PlaylistModel extends EndpointModel {
@@ -16,5 +18,6 @@ export default class PlaylistModel extends EndpointModel {
     getContents(endpoint: Endpoint & {
         type: EndpointType;
     }): Promise<WatchContent | PageContent | null>;
+    protected getContinuationItems(continuation: PageElement.Section['continuation'], recursive?: boolean, currentItems?: SectionItem[]): Promise<PageElement.SectionItem[]>;
 }
 //# sourceMappingURL=PlaylistModel.d.ts.map
