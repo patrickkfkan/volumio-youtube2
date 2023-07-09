@@ -13,7 +13,7 @@ import PlayController from './lib/controller/play/PlayController';
 import { jsPromiseToKew } from './lib/util';
 import Auth, { AuthStatus } from './lib/util/Auth';
 import Model, { ModelType } from './lib/model';
-import { Account, I18nOptionValue, I18nOptions } from './lib/types/ConfigData';
+import { Account, I18nOptionValue, I18nOptions } from './lib/types/PluginConfig';
 import { QueueItem } from './lib/controller/browse/view-handlers/ExplodableViewHandler';
 import ViewHelper from './lib/controller/browse/view-handlers/ViewHelper';
 

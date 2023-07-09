@@ -30,6 +30,7 @@ const YouTube2Context_1 = __importDefault(require("../../../YouTube2Context"));
 const model_1 = require("../../../model");
 const Endpoint_1 = require("../../../types/Endpoint");
 const Auth_1 = __importStar(require("../../../util/Auth"));
+const EndpointHelper_1 = __importDefault(require("../../../util/EndpointHelper"));
 const ExplodeHelper_1 = __importDefault(require("../../../util/ExplodeHelper"));
 const FeedViewHandler_1 = __importDefault(require("./FeedViewHandler"));
 // From InnerTube lib (YouTube.js#Actions)
@@ -51,7 +52,7 @@ const REQUIRES_SIGNIN_BROWSE_IDS = [
 class GenericViewHandler extends FeedViewHandler_1.default {
     async browse() {
         const endpoint = this.getEndpoint();
-        if (endpoint?.type === Endpoint_1.EndpointType.Browse &&
+        if (EndpointHelper_1.default.isType(endpoint, Endpoint_1.EndpointType.Browse) &&
             REQUIRES_SIGNIN_BROWSE_IDS.includes(endpoint.payload.browseId) &&
             Auth_1.default.getAuthStatus().status !== Auth_1.AuthStatus.SignedIn) {
             YouTube2Context_1.default.toast('error', YouTube2Context_1.default.getI18n('YOUTUBE2_ERR_REQUIRE_SIGN_IN'));
@@ -84,21 +85,21 @@ class GenericViewHandler extends FeedViewHandler_1.default {
             YouTube2Context_1.default.toast('error', YouTube2Context_1.default.getI18n('YOUTUBE2_ERR_OP_NOT_SUPPORTED'));
             throw Error(YouTube2Context_1.default.getI18n('YOUTUBE2_ERR_OP_NOT_SUPPORTED'));
         }
-        const endpointPredicate = (endpoint) => endpoint.type === Endpoint_1.EndpointType.Watch && endpoint.payload?.playlistId;
+        const endpointPredicate = (endpoint) => !!(EndpointHelper_1.default.isType(endpoint, Endpoint_1.EndpointType.Watch) && endpoint.payload?.playlistId);
         const model = this.getModel(model_1.ModelType.Endpoint);
         let targetWatchEndpoint = null;
-        if (endpoint.type === Endpoint_1.EndpointType.Browse) {
+        if (EndpointHelper_1.default.isType(endpoint, Endpoint_1.EndpointType.Browse)) {
             let contents = await model.getContents({ ...endpoint, type: endpoint.type });
             let tabs = contents?.tabs || [];
             if (tabs.length > 0) {
                 // Remaining tabs that can be used to look for watch endpoints
-                tabs = tabs.filter((tab) => !tab.selected && tab.endpoint?.type === Endpoint_1.EndpointType.Browse);
+                tabs = tabs.filter((tab) => !tab.selected && EndpointHelper_1.default.isType(tab.endpoint, Endpoint_1.EndpointType.Browse));
             }
             while (!targetWatchEndpoint) {
                 targetWatchEndpoint = this.findAllEndpointsInSection(contents?.sections, endpointPredicate)[0];
                 if (!targetWatchEndpoint) {
                     const nextTab = tabs.shift();
-                    if (nextTab?.endpoint.type === Endpoint_1.EndpointType.Browse) {
+                    if (nextTab?.endpoint && EndpointHelper_1.default.isType(nextTab.endpoint, Endpoint_1.EndpointType.Browse)) {
                         contents = await model.getContents({ ...nextTab.endpoint, type: endpoint.type });
                     }
                     else {
@@ -114,7 +115,7 @@ class GenericViewHandler extends FeedViewHandler_1.default {
             YouTube2Context_1.default.toast('error', YouTube2Context_1.default.getI18n('YOUTUBE2_ERR_NO_PLAYABLE_ITEMS_FOUND'));
             throw Error('No playable items found');
         }
-        const contents = await model.getContents({ ...targetWatchEndpoint, type: Endpoint_1.EndpointType.Watch });
+        const contents = await model.getContents(targetWatchEndpoint);
         const result = contents?.playlist?.items?.filter((item) => item.type === 'video')
             .map((item) => ExplodeHelper_1.default.getExplodedTrackInfoFromVideo(item)) || [];
         return result;

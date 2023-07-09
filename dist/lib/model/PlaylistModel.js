@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const YouTube2Context_1 = __importDefault(require("../YouTube2Context"));
 const Endpoint_1 = require("../types/Endpoint");
 const util_1 = require("../util");
+const EndpointHelper_1 = __importDefault(require("../util/EndpointHelper"));
 const EndpointModel_1 = __importDefault(require("./EndpointModel"));
 class PlaylistModel extends EndpointModel_1.default {
     constructor() {
@@ -19,10 +20,10 @@ class PlaylistModel extends EndpointModel_1.default {
         _PlaylistModel_instances.add(this);
     }
     async getContents(endpoint) {
-        if (endpoint.type !== Endpoint_1.EndpointType.Browse && endpoint.type !== Endpoint_1.EndpointType.BrowseContinuation) {
+        if (!EndpointHelper_1.default.isType(endpoint, Endpoint_1.EndpointType.Browse, Endpoint_1.EndpointType.BrowseContinuation)) {
             throw Error(`PlaylistModel.getContents() expects endpoint type Browse or BrowseContinuation, but got ${endpoint.type}`);
         }
-        const contents = await super.getContents({ ...endpoint, type: endpoint.type });
+        const contents = await super.getContents(endpoint);
         const loadAll = YouTube2Context_1.default.getConfigValue('loadFullPlaylists');
         if (!loadAll || !contents) {
             return contents;
@@ -43,7 +44,7 @@ class PlaylistModel extends EndpointModel_1.default {
         if (!continuation) {
             return [];
         }
-        const contents = await super.getContents({ ...continuation.endpoint, type: Endpoint_1.EndpointType.BrowseContinuation });
+        const contents = await super.getContents(continuation.endpoint);
         // There should only be one section for playlist continuation items
         const targetSection = contents?.sections?.[0];
         if (targetSection?.items && targetSection.items.length > 0) {

@@ -52,7 +52,7 @@ class SubscriptionsViewHandler extends GenericViewHandler_1.default {
                     browseId: 'FEchannels'
                 }
             };
-            const channelList = await endpointModel.getContents({ ...channelsEndpoint, type: Endpoint_1.EndpointType.Browse });
+            const channelList = await endpointModel.getContents(channelsEndpoint);
             let channels, hasMoreChannels = false;
             if (channelList?.sections) {
                 channels = this.findAllItemsInSection(channelList?.sections, (item) => item.type === 'channel');

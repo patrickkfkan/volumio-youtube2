@@ -1,7 +1,7 @@
 import yt2 from '../../../YouTube2Context';
 import { ModelType } from '../../../model';
 import { ContentItem, PageElement } from '../../../types';
-import PageContent from '../../../types/PageContent';
+import { PageContent } from '../../../types/Content';
 import Auth, { AuthStatus } from '../../../util/Auth';
 import { ExplodedTrackInfo } from './ExplodableViewHandler';
 import FeedViewHandler, { FeedView } from './FeedViewHandler';
