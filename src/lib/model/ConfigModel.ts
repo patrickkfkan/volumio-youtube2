@@ -128,31 +128,27 @@ export default class ConfigModel extends BaseModel {
   }
 
   async #fetchAccountMenu() {
-    const innertube = this.getInnertube();
+    const { innertube } = await this.getInnertube();
 
     const requestData = {
       client: 'WEB'
     };
 
-    if (innertube) {
-      try {
-        const response = await innertube.session.http.fetch('/account/account_menu', {
-          method: 'POST',
-          body: JSON.stringify(requestData),
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
+    try {
+      const response = await innertube.session.http.fetch('/account/account_menu', {
+        method: 'POST',
+        body: JSON.stringify(requestData),
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
 
-        return JSON.parse(await response.text());
-      }
-      catch (error) {
-        yt2.getLogger().error(yt2.getErrorMessage('[youtube2] Error in ConfigModel.#fetchAccountMenu(): ', error));
-        return null;
-      }
+      return JSON.parse(await response.text());
     }
-
-    return null;
+    catch (error) {
+      yt2.getLogger().error(yt2.getErrorMessage('[youtube2] Error in ConfigModel.#fetchAccountMenu(): ', error));
+      return null;
+    }
   }
 
   getRootContentTypeOptions() {

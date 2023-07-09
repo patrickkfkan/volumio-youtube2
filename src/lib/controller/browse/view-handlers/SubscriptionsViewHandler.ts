@@ -1,10 +1,11 @@
 import yt2 from '../../../YouTube2Context';
 import { ModelType } from '../../../model';
+import InnertubeLoader from '../../../model/InnertubeLoader';
 import { ContentItem, PageElement } from '../../../types';
 import { PageContent } from '../../../types/Content';
 import { BrowseEndpoint, EndpointType } from '../../../types/Endpoint';
 import { SectionItem } from '../../../types/PageElement';
-import Auth, { AuthStatus } from '../../../util/Auth';
+import { AuthStatus } from '../../../util/Auth';
 import GenericViewHandler, { GenericView } from './GenericViewHandler';
 
 const CHANNEL_DISPLAY_LIMIT = 6;
@@ -28,8 +29,8 @@ export default class SubscriptionsViewHandler extends GenericViewHandler<Subscri
       contents.sections = [];
     }
 
-    const authStatus = Auth.getAuthStatus();
-    if (authStatus.status === AuthStatus.SignedIn) {
+    const { auth } = await InnertubeLoader.getInstance();
+    if (auth.getStatus().status === AuthStatus.SignedIn) {
       const endpointModel = this.getModel(ModelType.Endpoint);
       const channelsEndpoint: BrowseEndpoint = {
         type: EndpointType.Browse,

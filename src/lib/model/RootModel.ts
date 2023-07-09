@@ -8,10 +8,7 @@ import { PageContent } from '../types/Content';
 export default class RootModel extends BaseModel {
 
   async getContents(opts?: { contentType: 'simple' | 'full'}): Promise<PageContent | null> {
-    const innertube = this.getInnertube();
-    if (!innertube) {
-      throw Error('Innertube not ready');
-    }
+    const { innertube } = await this.getInnertube();
     const guide = await innertube.getGuide();
     const sections = guide.contents.map((section) => this.#expandGuideSection(section));
     const parsed = InnertubeResultParser.parseResult({ contents: sections });

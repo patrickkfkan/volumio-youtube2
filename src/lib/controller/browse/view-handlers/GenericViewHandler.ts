@@ -1,8 +1,9 @@
 import yt2 from '../../../YouTube2Context';
 import { ModelType } from '../../../model';
+import InnertubeLoader from '../../../model/InnertubeLoader';
 import { PageContent, WatchContent } from '../../../types/Content';
 import Endpoint, { EndpointType, WatchEndpoint } from '../../../types/Endpoint';
-import Auth, { AuthStatus } from '../../../util/Auth';
+import { AuthStatus } from '../../../util/Auth';
 import EndpointHelper from '../../../util/EndpointHelper';
 import ExplodeHelper from '../../../util/ExplodeHelper';
 import FeedViewHandler, { FeedView } from './FeedViewHandler';
@@ -33,10 +34,11 @@ export default class GenericViewHandler<V extends Omit<GenericView, 'name'> & { 
 
   async browse() {
     const endpoint = this.getEndpoint();
+    const { auth } = await InnertubeLoader.getInstance();
 
     if (EndpointHelper.isType(endpoint, EndpointType.Browse) &&
       REQUIRES_SIGNIN_BROWSE_IDS.includes(endpoint.payload.browseId) &&
-      Auth.getAuthStatus().status !== AuthStatus.SignedIn) {
+      auth.getStatus().status !== AuthStatus.SignedIn) {
       yt2.toast('error', yt2.getI18n('YOUTUBE2_ERR_REQUIRE_SIGN_IN'));
       throw Error(yt2.getI18n('YOUTUBE2_ERR_REQUIRE_SIGN_IN'));
     }

@@ -8,10 +8,7 @@ import EndpointHelper from '../util/EndpointHelper';
 export default class EndpointModel extends BaseModel {
 
   async getContents<T extends Endpoint>(endpoint: T): Promise<ContentOf<T> | null> {
-    const innertube = this.getInnertube();
-    if (!innertube) {
-      throw Error('Innertube API not ready');
-    }
+    const { innertube } = await this.getInnertube();
 
     if (EndpointHelper.isType(endpoint, EndpointType.Browse, EndpointType.BrowseContinuation)) {
       return this.#doGetContents(innertube, '/browse', endpoint);

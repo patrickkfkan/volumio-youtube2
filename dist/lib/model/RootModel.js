@@ -19,10 +19,7 @@ class RootModel extends BaseModel_1.BaseModel {
         _RootModel_instances.add(this);
     }
     async getContents(opts) {
-        const innertube = this.getInnertube();
-        if (!innertube) {
-            throw Error('Innertube not ready');
-        }
+        const { innertube } = await this.getInnertube();
         const guide = await innertube.getGuide();
         const sections = guide.contents.map((section) => __classPrivateFieldGet(this, _RootModel_instances, "m", _RootModel_expandGuideSection).call(this, section));
         const parsed = InnertubeResultParser_1.default.parseResult({ contents: sections });

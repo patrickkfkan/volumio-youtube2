@@ -20,10 +20,7 @@ class EndpointModel extends BaseModel_1.BaseModel {
         _EndpointModel_instances.add(this);
     }
     async getContents(endpoint) {
-        const innertube = this.getInnertube();
-        if (!innertube) {
-            throw Error('Innertube API not ready');
-        }
+        const { innertube } = await this.getInnertube();
         if (EndpointHelper_1.default.isType(endpoint, Endpoint_1.EndpointType.Browse, Endpoint_1.EndpointType.BrowseContinuation)) {
             return __classPrivateFieldGet(this, _EndpointModel_instances, "m", _EndpointModel_doGetContents).call(this, innertube, '/browse', endpoint);
         }
