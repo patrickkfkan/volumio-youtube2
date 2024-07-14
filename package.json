@@ -51,6 +51,7 @@
 	"dependencies": {
 		"kew": "^0.7.0",
 		"node-fetch": "^2.6.7",
+		"now-playing-common": "github:patrickkfkan/volumio-now-playing-common#v0.3.2",
 		"string-format": "^2.0.0",
 		"v-conf": "^1.4.2",
 		"volumio-youtubei.js": "git+https://github.com/patrickkfkan/Volumio-YouTube.js.git#v0.3.6"
