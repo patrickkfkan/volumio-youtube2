@@ -1073,6 +1073,7 @@ export default class InnertubeResultParser {
         };
         return __checkType(weResult);
 
+      case '/next':
       case 'next':
         if (data?.payload?.request === 'CONTINUATION_REQUEST_TYPE_WATCH_NEXT') {
           const result: WatchContinuationEndpoint = {
@@ -1082,6 +1083,13 @@ export default class InnertubeResultParser {
             }
           };
           return __checkType(result);
+        }
+        if (data?.metadata?.page_type === 'WEB_PAGE_TYPE_WATCH') {
+          const weResult: WatchEndpoint = {
+            type: EndpointType.Watch,
+            payload: __createPayload<WatchEndpoint>([ 'videoId', 'playlistId', 'params', 'index' ])
+          };
+          return __checkType(weResult);
         }
         break;
 
