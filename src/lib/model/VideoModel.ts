@@ -1,6 +1,5 @@
 import {type YT, type Types} from 'volumio-youtubei.js';
 import type Innertube from 'volumio-youtubei.js';
-import fetch from 'node-fetch';
 import yt2 from '../YouTube2Context';
 import type VideoPlaybackInfo from '../types/VideoPlaybackInfo';
 import { BaseModel } from './BaseModel';
