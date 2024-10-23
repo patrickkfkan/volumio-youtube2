@@ -36,11 +36,13 @@ var __classPrivateFieldSet = (this && this.__classPrivateFieldSet) || function (
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-var _a, _InnertubeLoader_innertube, _InnertubeLoader_auth, _InnertubeLoader_pendingPromise, _InnertubeLoader_handleAuthEvent;
+var _a, _InnertubeLoader_innertube, _InnertubeLoader_auth, _InnertubeLoader_pendingPromise, _InnertubeLoader_handleAuthEvent, _InnertubeLoader_generatePoToken;
 Object.defineProperty(exports, "__esModule", { value: true });
 const YouTube2Context_1 = __importDefault(require("../YouTube2Context"));
 const volumio_youtubei_js_1 = __importDefault(require("volumio-youtubei.js"));
 const Auth_1 = __importStar(require("../util/Auth"));
+const bgutils_js_1 = __importDefault(require("bgutils-js"));
+const jsdom_1 = require("jsdom");
 class InnertubeLoader {
     static async getInstance() {
         if (__classPrivateFieldGet(this, _a, "f", _InnertubeLoader_innertube) && __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_auth)) {
@@ -55,7 +57,18 @@ class InnertubeLoader {
         __classPrivateFieldSet(this, _a, new Promise((resolve) => {
             void (async () => {
                 YouTube2Context_1.default.getLogger().info('[youtube2] InnertubeLoader: creating Innertube instance...');
-                __classPrivateFieldSet(this, _a, await volumio_youtubei_js_1.default.create(), "f", _InnertubeLoader_innertube);
+                try {
+                    const { visitorData, poToken } = await __classPrivateFieldGet(this, _a, "m", _InnertubeLoader_generatePoToken).call(this);
+                    __classPrivateFieldSet(this, _a, await volumio_youtubei_js_1.default.create({
+                        po_token: poToken,
+                        visitor_data: visitorData
+                    }), "f", _InnertubeLoader_innertube);
+                }
+                catch (error) {
+                    YouTube2Context_1.default.getLogger().error(YouTube2Context_1.default.getErrorMessage('[youtube2] Failed to get poToken: ', error, false));
+                    YouTube2Context_1.default.getLogger().error('[youtube2] Warning: poToken will not be used to create Innertube instance. Playback of YouTube content might fail.');
+                    __classPrivateFieldSet(this, _a, await volumio_youtubei_js_1.default.create(), "f", _InnertubeLoader_innertube);
+                }
                 this.applyI18nConfig();
                 YouTube2Context_1.default.getLogger().info('[youtube2] InnertubeLoader: creating Auth instance...');
                 __classPrivateFieldSet(this, _a, Auth_1.default.create(__classPrivateFieldGet(this, _a, "f", _InnertubeLoader_innertube)), "f", _InnertubeLoader_auth);
@@ -115,6 +128,44 @@ _a = InnertubeLoader, _InnertubeLoader_handleAuthEvent = function _InnertubeLoad
         innertube,
         auth
     });
+}, _InnertubeLoader_generatePoToken = async function _InnertubeLoader_generatePoToken() {
+    YouTube2Context_1.default.getLogger().info('[youtube2] InnertubeLoader: Generating poToken...');
+    const requestKey = 'O43z0dpjhgX20SCx4KAo';
+    const visitorData = (await volumio_youtubei_js_1.default.create({ retrieve_player: false })).session.context.client.visitorData;
+    if (!visitorData) {
+        throw Error('Visitor data not found in session data');
+    }
+    const bgConfig = {
+        fetch: (url, options) => fetch(url, options),
+        globalObj: globalThis,
+        identifier: visitorData,
+        requestKey
+    };
+    const dom = new jsdom_1.JSDOM();
+    Object.assign(globalThis, {
+        window: dom.window,
+        document: dom.window.document
+    });
+    const bgChallenge = await bgutils_js_1.default.Challenge.create(bgConfig);
+    if (!bgChallenge) {
+        throw new Error('Could not get challenge');
+    }
+    const interpreterJavascript = bgChallenge.interpreterJavascript.privateDoNotAccessOrElseSafeScriptWrappedValue;
+    if (interpreterJavascript) {
+        // eslint-disable-next-line @typescript-eslint/no-implied-eval
+        new Function(interpreterJavascript)();
+    }
+    else
+        throw new Error('Could not load VM');
+    const poTokenResult = await bgutils_js_1.default.PoToken.generate({
+        program: bgChallenge.program,
+        globalName: bgChallenge.globalName,
+        bgConfig
+    });
+    YouTube2Context_1.default.getLogger().info('[youtube2] InnertubeLoader: obtained poToken');
+    return {
+        visitorData, poToken: poTokenResult.poToken
+    };
 };
 _InnertubeLoader_innertube = { value: null };
 _InnertubeLoader_auth = { value: null };
