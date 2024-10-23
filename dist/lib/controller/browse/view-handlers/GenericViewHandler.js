@@ -99,7 +99,6 @@ class GenericViewHandler extends FeedViewHandler_1.default {
             .map((item) => ExplodeHelper_1.default.getExplodedTrackInfoFromVideo(item)) || [];
         return result;
     }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     getEndpoint(explode = false) {
         const view = this.currentView;
         if (view.continuation) {

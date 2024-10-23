@@ -24,7 +24,7 @@ var AuthStatus;
     AuthStatus["SignedOut"] = "SignedOut";
     AuthStatus["SigningIn"] = "SigningIn";
     AuthStatus["Error"] = "Error";
-})(AuthStatus = exports.AuthStatus || (exports.AuthStatus = {}));
+})(AuthStatus || (exports.AuthStatus = AuthStatus = {}));
 const INITIAL_SIGNED_OUT_STATUS = {
     status: AuthStatus.SignedOut,
     verificationInfo: null
@@ -34,7 +34,7 @@ var AuthEvent;
     AuthEvent["SignIn"] = "SignIn";
     AuthEvent["Pending"] = "Pending";
     AuthEvent["Error"] = "Error";
-})(AuthEvent = exports.AuthEvent || (exports.AuthEvent = {}));
+})(AuthEvent || (exports.AuthEvent = AuthEvent = {}));
 class Auth extends events_1.default {
     constructor() {
         super();
@@ -72,7 +72,7 @@ class Auth extends events_1.default {
                 YouTube2Context_1.default.set('authStatusInfo', INITIAL_SIGNED_OUT_STATUS);
             }
             YouTube2Context_1.default.refreshUIConfig();
-            __classPrivateFieldGet(this, _Auth_innertube, "f").session.signIn(credentials);
+            void __classPrivateFieldGet(this, _Auth_innertube, "f").session.signIn(credentials);
         }
     }
     async signOut() {
@@ -89,7 +89,6 @@ class Auth extends events_1.default {
         return YouTube2Context_1.default.get('authStatusInfo') || INITIAL_SIGNED_OUT_STATUS;
     }
 }
-exports.default = Auth;
 _Auth_innertube = new WeakMap(), _Auth_handlers = new WeakMap(), _Auth_instances = new WeakSet(), _Auth_handlePending = function _Auth_handlePending(data) {
     YouTube2Context_1.default.set('authStatusInfo', {
         status: AuthStatus.SignedOut,
@@ -116,7 +115,7 @@ _Auth_innertube = new WeakMap(), _Auth_handlers = new WeakMap(), _Auth_instances
         YouTube2Context_1.default.getLogger().info('[youtube2] Auth credentials updated');
     }
 }, _Auth_handleError = function _Auth_handleError(err) {
-    if (err.info.status === 'DEVICE_CODE_EXPIRED') {
+    if (err.info.error === 'expired_token') {
         YouTube2Context_1.default.set('authStatusInfo', INITIAL_SIGNED_OUT_STATUS);
     }
     else {
@@ -143,4 +142,5 @@ _Auth_innertube = new WeakMap(), _Auth_handlers = new WeakMap(), _Auth_instances
         __classPrivateFieldGet(this, _Auth_innertube, "f").session.off('update-credentials', __classPrivateFieldGet(this, _Auth_handlers, "f").onCredentials);
     }
 };
+exports.default = Auth;
 //# sourceMappingURL=Auth.js.map

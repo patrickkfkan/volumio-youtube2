@@ -188,7 +188,6 @@ class FeedViewHandler extends ExplodableViewHandler_1.default {
         return result;
     }
 }
-exports.default = FeedViewHandler;
 _FeedViewHandler_instances = new WeakSet(), _FeedViewHandler_sectionToLists = function _FeedViewHandler_sectionToLists(contents, section, header) {
     const listsForSection = [];
     const isPlaylistContents = contents.header?.type === 'playlist';
@@ -367,4 +366,5 @@ _FeedViewHandler_instances = new WeakSet(), _FeedViewHandler_sectionToLists = fu
         optionValues: tabs
     };
 };
+exports.default = FeedViewHandler;
 //# sourceMappingURL=FeedViewHandler.js.map

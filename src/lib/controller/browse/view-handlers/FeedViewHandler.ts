@@ -1,15 +1,18 @@
 import yt2 from '../../../YouTube2Context';
-import { ContentItem, PageElement } from '../../../types';
-import Endpoint, { BrowseContinuationEndpoint, BrowseEndpoint, EndpointType, SearchContinuationEndpoint, SearchEndpoint, WatchEndpoint } from '../../../types/Endpoint';
+import { type ContentItem, type PageElement } from '../../../types';
+import {type BrowseContinuationEndpoint, type BrowseEndpoint, type SearchContinuationEndpoint, type SearchEndpoint, type WatchEndpoint} from '../../../types/Endpoint';
+import type Endpoint from '../../../types/Endpoint';
+import { EndpointType } from '../../../types/Endpoint';
 import ExplodableViewHandler from './ExplodableViewHandler';
-import View, { ContinuationBundle } from './View';
-import { RenderedList, RenderedPage } from './ViewHandler';
+import {type ContinuationBundle} from './View';
+import type View from './View';
+import { type RenderedList, type RenderedPage } from './ViewHandler';
 import { RendererType } from './renderers';
-import { RenderedHeader, RenderedListItem } from './renderers/BaseRenderer';
-import { ContinuationBundleOption } from './renderers/OptionRenderer';
-import { SectionItem } from '../../../types/PageElement';
+import { type RenderedHeader, type RenderedListItem } from './renderers/BaseRenderer';
+import { type ContinuationBundleOption } from './renderers/OptionRenderer';
+import { type SectionItem } from '../../../types/PageElement';
 import EndpointHelper from '../../../util/EndpointHelper';
-import { PageContent } from '../../../types/Content';
+import { type PageContent } from '../../../types/Content';
 
 /**
  * View handler for feed contents consisting of sections and optional header.

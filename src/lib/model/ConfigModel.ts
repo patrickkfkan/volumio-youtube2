@@ -1,10 +1,10 @@
-import { Parser, RawNode, YTNodes, Misc as YTMisc } from 'volumio-youtubei.js';
+import { Parser, type RawNode, YTNodes, Misc as YTMisc } from 'volumio-youtubei.js';
 import yt2 from '../YouTube2Context';
 import { findInObject } from '../util';
 import { BaseModel } from './BaseModel';
 import InnertubeResultParser from './InnertubeResultParser';
-import { PluginConfig } from '../types';
-import { I18nOptions, PluginConfigSchema } from '../types/PluginConfig';
+import { type PluginConfig } from '../types';
+import { type I18nOptions, type PluginConfigSchema } from '../types/PluginConfig';
 
 export const PLUGIN_CONFIG_SCHEMA: PluginConfigSchema = {
   region: { defaultValue: 'US', json: false },
@@ -82,7 +82,7 @@ export default class ConfigModel extends BaseModel {
     const languageMenu = findInObject(contents, __createPredicate('selectLanguageCommand', 'hl'))?.[0];
     const regionMenu = findInObject(contents, __createPredicate('selectCountryCommand', 'gl'))?.[0];
 
-    const defualtI18nOptions = this.#getDefaultI18nOptions();
+    const defualtI18nOptions = this.getDefaultI18nOptions();
     const results: PluginConfig.I18nOptions = {};
 
     if (languageMenu) {
@@ -197,7 +197,7 @@ export default class ConfigModel extends BaseModel {
     ];
   }
 
-  #getDefaultI18nOptions() {
+  getDefaultI18nOptions() {
     return {
       region: {
         label: yt2.getI18n('YOUTUBE2_REGION'),

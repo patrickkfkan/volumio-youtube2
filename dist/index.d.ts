@@ -1,6 +1,6 @@
-import { SearchQuery } from './lib/controller/search/SearchController';
-import { QueueItem } from './lib/controller/browse/view-handlers/ExplodableViewHandler';
-import { NowPlayingPluginSupport } from 'now-playing-common';
+import { type SearchQuery } from './lib/controller/search/SearchController';
+import { type QueueItem } from './lib/controller/browse/view-handlers/ExplodableViewHandler';
+import { type NowPlayingPluginSupport } from 'now-playing-common';
 import YouTube2NowPlayingMetadataProvider from './lib/util/YouTube2NowPlayingMetadataProvider';
 interface GotoParams extends QueueItem {
     type: 'album' | 'artist';

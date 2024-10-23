@@ -1,4 +1,5 @@
-import Innertube, { Credentials, OAuthAuthPendingData, Utils as YTUtils } from 'volumio-youtubei.js';
+import {type OAuth2Tokens, type DeviceAndUserCode, type Utils as YTUtils} from 'volumio-youtubei.js';
+import type Innertube from 'volumio-youtubei.js';
 import yt2 from '../YouTube2Context';
 import EventEmitter from 'events';
 
@@ -15,7 +16,7 @@ export interface AuthStatusInfo {
     verificationUrl: string,
     userCode: string
   } | null;
-  error?: YTUtils.OAuthError;
+  error?: YTUtils.OAuth2Error;
 }
 
 const INITIAL_SIGNED_OUT_STATUS: AuthStatusInfo = {
@@ -58,7 +59,7 @@ export default class Auth extends EventEmitter {
     this.#innertube = null;
   }
 
-  #handlePending(data: OAuthAuthPendingData) {
+  #handlePending(data: DeviceAndUserCode) {
     yt2.set<AuthStatusInfo>('authStatusInfo', {
       status: AuthStatus.SignedOut,
       verificationInfo: {
@@ -71,7 +72,7 @@ export default class Auth extends EventEmitter {
     this.emit(AuthEvent.Pending);
   }
 
-  #handleSuccess(data: { credentials: Credentials }) {
+  #handleSuccess(data: { credentials: OAuth2Tokens }) {
     const oldStatusInfo = yt2.get<AuthStatusInfo>('authStatusInfo');
     yt2.set<AuthStatusInfo>('authStatusInfo', {
       status: AuthStatus.SignedIn
@@ -88,8 +89,8 @@ export default class Auth extends EventEmitter {
     }
   }
 
-  #handleError(err: YTUtils.OAuthError) {
-    if (err.info.status === 'DEVICE_CODE_EXPIRED') {
+  #handleError(err: YTUtils.OAuth2Error) {
+    if (err.info.error === 'expired_token') {
       yt2.set('authStatusInfo', INITIAL_SIGNED_OUT_STATUS);
     }
     else {
@@ -137,7 +138,7 @@ export default class Auth extends EventEmitter {
       }
 
       yt2.refreshUIConfig();
-      this.#innertube.session.signIn(credentials);
+      void this.#innertube.session.signIn(credentials);
     }
   }
 

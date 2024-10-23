@@ -7,7 +7,7 @@ var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-var _ConfigModel_instances, _ConfigModel_fetchAccountMenu, _ConfigModel_getDefaultI18nOptions;
+var _ConfigModel_instances, _ConfigModel_fetchAccountMenu;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PLUGIN_CONFIG_SCHEMA = void 0;
 const volumio_youtubei_js_1 = require("volumio-youtubei.js");
@@ -83,7 +83,7 @@ class ConfigModel extends BaseModel_1.BaseModel {
         const contents = await __classPrivateFieldGet(this, _ConfigModel_instances, "m", _ConfigModel_fetchAccountMenu).call(this);
         const languageMenu = (0, util_1.findInObject)(contents, __createPredicate('selectLanguageCommand', 'hl'))?.[0];
         const regionMenu = (0, util_1.findInObject)(contents, __createPredicate('selectCountryCommand', 'gl'))?.[0];
-        const defualtI18nOptions = __classPrivateFieldGet(this, _ConfigModel_instances, "m", _ConfigModel_getDefaultI18nOptions).call(this);
+        const defualtI18nOptions = this.getDefaultI18nOptions();
         const results = {};
         if (languageMenu) {
             const languageOption = __parseMenu(languageMenu, 'selectLanguageCommand', 'hl');
@@ -163,8 +163,23 @@ class ConfigModel extends BaseModel_1.BaseModel {
             }
         ];
     }
+    getDefaultI18nOptions() {
+        return {
+            region: {
+                label: YouTube2Context_1.default.getI18n('YOUTUBE2_REGION'),
+                optionValues: [
+                    { label: 'United States', value: 'US' }
+                ]
+            },
+            language: {
+                label: YouTube2Context_1.default.getI18n('YOUTUBE2_LANGUAGE'),
+                optionValues: [
+                    { label: 'English (US)', value: 'en' }
+                ]
+            }
+        };
+    }
 }
-exports.default = ConfigModel;
 _ConfigModel_instances = new WeakSet(), _ConfigModel_fetchAccountMenu = async function _ConfigModel_fetchAccountMenu() {
     const { innertube } = await this.getInnertube();
     const requestData = {
@@ -184,20 +199,6 @@ _ConfigModel_instances = new WeakSet(), _ConfigModel_fetchAccountMenu = async fu
         YouTube2Context_1.default.getLogger().error(YouTube2Context_1.default.getErrorMessage('[youtube2] Error in ConfigModel.#fetchAccountMenu(): ', error));
         return null;
     }
-}, _ConfigModel_getDefaultI18nOptions = function _ConfigModel_getDefaultI18nOptions() {
-    return {
-        region: {
-            label: YouTube2Context_1.default.getI18n('YOUTUBE2_REGION'),
-            optionValues: [
-                { label: 'United States', value: 'US' }
-            ]
-        },
-        language: {
-            label: YouTube2Context_1.default.getI18n('YOUTUBE2_LANGUAGE'),
-            optionValues: [
-                { label: 'English (US)', value: 'en' }
-            ]
-        }
-    };
 };
+exports.default = ConfigModel;
 //# sourceMappingURL=ConfigModel.js.map

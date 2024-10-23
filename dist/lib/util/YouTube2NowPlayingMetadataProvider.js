@@ -55,8 +55,8 @@ class YouTube2NowPlayingMetadataProvider {
         }
         return song;
     }
-    async getAlbumInfo() {
-        return null;
+    getAlbumInfo() {
+        return Promise.resolve(null);
     }
     async getArtistInfo(artistName, payload) {
         let channelId = null;

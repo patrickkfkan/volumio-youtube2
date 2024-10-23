@@ -82,7 +82,7 @@ class InnertubeResultParser {
         };
         switch (data?.metadata?.api_url) {
             case '/browse':
-            case 'browse':
+            case 'browse': {
                 if (data?.payload?.token && data.payload.request === 'CONTINUATION_REQUEST_TYPE_BROWSE') {
                     const result = {
                         type: Endpoint_1.EndpointType.BrowseContinuation,
@@ -97,8 +97,9 @@ class InnertubeResultParser {
                     payload: __createPayload(['browseId', 'params'])
                 };
                 return __checkType(beResult);
+            }
             case '/search':
-            case 'search':
+            case 'search': {
                 if (data?.payload?.token && data.payload.request === 'CONTINUATION_REQUEST_TYPE_SEARCH') {
                     const result = {
                         type: Endpoint_1.EndpointType.SearchContinuation,
@@ -113,14 +114,16 @@ class InnertubeResultParser {
                     payload: __createPayload(['query', 'params'])
                 };
                 return __checkType(seResult);
-            case '/player':
+            }
+            case '/player': {
                 const weResult = {
                     type: Endpoint_1.EndpointType.Watch,
                     payload: __createPayload(['videoId', 'playlistId', 'params', 'index'])
                 };
                 return __checkType(weResult);
+            }
             case '/next':
-            case 'next':
+            case 'next': {
                 if (data?.payload?.request === 'CONTINUATION_REQUEST_TYPE_WATCH_NEXT') {
                     const result = {
                         type: Endpoint_1.EndpointType.WatchContinuation,
@@ -138,6 +141,7 @@ class InnertubeResultParser {
                     return __checkType(weResult);
                 }
                 break;
+            }
             default:
         }
         if (data?.metadata?.page_type === 'WEB_PAGE_TYPE_SHORTS') {
@@ -152,7 +156,6 @@ class InnertubeResultParser {
         return null;
     }
 }
-exports.default = InnertubeResultParser;
 _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpointResult = function _InnertubeResultParser_parseWatchContinuationEndpointResult(data) {
     const itemContinuations = data.on_response_received_endpoints || null;
     if (itemContinuations && itemContinuations.length > 0) {
@@ -554,7 +557,7 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
     // SectionList.SearchSubMenu
     if (data.sub_menu instanceof volumio_youtubei_js_1.YTNodes.SearchSubMenu) {
         // One filter per group
-        const searchFilters = data.sub_menu.groups.reduce((filters, group) => {
+        const searchFilters = data.sub_menu.groups?.reduce((filters, group) => {
             const title = this.unwrap(group.title);
             if (title) {
                 const optionValues = group.filters?.filter((f) => !f.disabled)
@@ -587,7 +590,7 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
     if (sectionFilters.length > 0) {
         section.filters = sectionFilters;
     }
-    const dataTitle = this.unwrap(data.title || data.header?.title);
+    const dataTitle = this.unwrap(data.title || (data.header?.hasKey('title') ? data.header.title : null));
     const dataEndpoint = this.parseEndpoint(data.endpoint, Endpoint_1.EndpointType.Browse, Endpoint_1.EndpointType.BrowseContinuation, Endpoint_1.EndpointType.Search, Endpoint_1.EndpointType.SearchContinuation);
     if (dataTitle) {
         section.title = dataTitle;
@@ -700,7 +703,7 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
         case 'PlaylistVideo':
         case 'ReelItem': // Published / author / duration  will be null
         case 'PlaylistPanelVideo': // Published / viewCount will be null
-        case 'GridMovie': // Published / viewCount will be null
+        case 'GridMovie': { // Published / viewCount will be null
             const vData = data;
             const vDataTitle = this.unwrap(vData.title);
             const vDataEndpoint = this.parseEndpoint(vData.endpoint, Endpoint_1.EndpointType.Watch);
@@ -719,7 +722,8 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
                 return vidResult;
             }
             return null;
-        case 'CompactStation': // Masquerade as playlist
+        }
+        case 'CompactStation': { // Masquerade as playlist
             const csData = data;
             const csDataTitle = this.unwrap(csData.title);
             const csDataEndpoint = this.parseEndpoint(csData.endpoint, Endpoint_1.EndpointType.Watch);
@@ -734,7 +738,8 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
                 return plResult;
             }
             return null;
-        case 'GameCard':
+        }
+        case 'GameCard': {
             const gcData = data;
             if (gcData.game instanceof volumio_youtubei_js_1.YTNodes.GameDetails) {
                 const gcDataName = this.unwrap(gcData.game.title);
@@ -751,11 +756,12 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
                 }
             }
             return null;
+        }
         case 'Playlist':
         case 'GridPlaylist':
         case 'Mix':
         case 'GridMix':
-        case 'CompactMix':
+        case 'CompactMix': {
             const plData = data;
             const plDataTitle = this.unwrap(plData.title);
             const plDataEndpoint = this.parseEndpoint(plData.endpoint, Endpoint_1.EndpointType.Watch);
@@ -777,8 +783,9 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
                 return playlistItem;
             }
             return null;
+        }
         case 'Channel':
-        case 'GridChannel':
+        case 'GridChannel': {
             const chData = data;
             const dataAuthor = __classPrivateFieldGet(this, _a, "m", _InnertubeResultParser_parseAuthor).call(this, chData.author);
             const chDataEndpoint = this.parseEndpoint(chData.endpoint, Endpoint_1.EndpointType.Browse);
@@ -788,13 +795,14 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
                     channelId: chData.id,
                     name: dataAuthor.name,
                     thumbnail: dataAuthor.thumbnail || undefined,
-                    subscribers: this.unwrap(chData.subscribers) || undefined,
+                    subscribers: this.unwrap(chData.subscriber_count) || undefined,
                     endpoint: chDataEndpoint
                 };
                 return chResult;
             }
             return null;
-        case 'GuideEntry':
+        }
+        case 'GuideEntry': {
             const geData = data;
             const geDataTitle = this.unwrap(geData.title);
             const geDataEndpoint = this.parseEndpoint(geData.endpoint, Endpoint_1.EndpointType.Browse);
@@ -810,10 +818,12 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
                 return geResult;
             }
             return null;
-        case 'RichItem':
+        }
+        case 'RichItem': {
             const riData = data;
             return __classPrivateFieldGet(this, _a, "m", _InnertubeResultParser_parseContentItem).call(this, riData.content);
-        case 'ShowingResultsFor':
+        }
+        case 'ShowingResultsFor': {
             const srfData = data;
             const srfDataEndpoint = this.parseEndpoint(srfData.original_query_endpoint, Endpoint_1.EndpointType.Search);
             const showResultsForText = `${this.unwrap(srfData.showing_results_for)} ${this.unwrap(srfData.corrected_query)}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${this.unwrap(srfData.search_instead_for)} ${this.unwrap(srfData.original_query)}`;
@@ -821,12 +831,13 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
                 const srResult = {
                     type: 'endpointLink',
                     title: showResultsForText,
-                    icon: 'YT2_SHOWING_RESULTS_FOR',
+                    icon: 'YT2_SHOWING_RESULTS_FOR', // Our own icon type to be used as a hint of what this endpoint is about
                     endpoint: srfDataEndpoint
                 };
                 return srResult;
             }
             return null;
+        }
         default:
             return null;
     }
@@ -906,4 +917,5 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
     }
     return null;
 };
+exports.default = InnertubeResultParser;
 //# sourceMappingURL=InnertubeResultParser.js.map

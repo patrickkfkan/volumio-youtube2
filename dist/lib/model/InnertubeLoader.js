@@ -52,16 +52,18 @@ class InnertubeLoader {
         if (__classPrivateFieldGet(this, _a, "f", _InnertubeLoader_pendingPromise)) {
             return __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_pendingPromise);
         }
-        __classPrivateFieldSet(this, _a, new Promise(async (resolve) => {
-            YouTube2Context_1.default.getLogger().info('[youtube2] InnertubeLoader: creating Innertube instance...');
-            __classPrivateFieldSet(this, _a, await volumio_youtubei_js_1.default.create(), "f", _InnertubeLoader_innertube);
-            this.applyI18nConfig();
-            YouTube2Context_1.default.getLogger().info('[youtube2] InnertubeLoader: creating Auth instance...');
-            __classPrivateFieldSet(this, _a, Auth_1.default.create(__classPrivateFieldGet(this, _a, "f", _InnertubeLoader_innertube)), "f", _InnertubeLoader_auth);
-            __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_auth).on(Auth_1.AuthEvent.SignIn, __classPrivateFieldGet(this, _a, "m", _InnertubeLoader_handleAuthEvent).bind(this, Auth_1.AuthEvent.SignIn, __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_innertube), __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_auth), resolve));
-            __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_auth).on(Auth_1.AuthEvent.Pending, __classPrivateFieldGet(this, _a, "m", _InnertubeLoader_handleAuthEvent).bind(this, Auth_1.AuthEvent.Pending, __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_innertube), __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_auth), resolve));
-            __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_auth).on(Auth_1.AuthEvent.Error, __classPrivateFieldGet(this, _a, "m", _InnertubeLoader_handleAuthEvent).bind(this, Auth_1.AuthEvent.Error, __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_innertube), __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_auth), resolve));
-            __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_auth).signIn();
+        __classPrivateFieldSet(this, _a, new Promise((resolve) => {
+            void (async () => {
+                YouTube2Context_1.default.getLogger().info('[youtube2] InnertubeLoader: creating Innertube instance...');
+                __classPrivateFieldSet(this, _a, await volumio_youtubei_js_1.default.create(), "f", _InnertubeLoader_innertube);
+                this.applyI18nConfig();
+                YouTube2Context_1.default.getLogger().info('[youtube2] InnertubeLoader: creating Auth instance...');
+                __classPrivateFieldSet(this, _a, Auth_1.default.create(__classPrivateFieldGet(this, _a, "f", _InnertubeLoader_innertube)), "f", _InnertubeLoader_auth);
+                __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_auth).on(Auth_1.AuthEvent.SignIn, __classPrivateFieldGet(this, _a, "m", _InnertubeLoader_handleAuthEvent).bind(this, Auth_1.AuthEvent.SignIn, __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_innertube), __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_auth), resolve));
+                __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_auth).on(Auth_1.AuthEvent.Pending, __classPrivateFieldGet(this, _a, "m", _InnertubeLoader_handleAuthEvent).bind(this, Auth_1.AuthEvent.Pending, __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_innertube), __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_auth), resolve));
+                __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_auth).on(Auth_1.AuthEvent.Error, __classPrivateFieldGet(this, _a, "m", _InnertubeLoader_handleAuthEvent).bind(this, Auth_1.AuthEvent.Error, __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_innertube), __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_auth), resolve));
+                __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_auth).signIn();
+            })();
         }), "f", _InnertubeLoader_pendingPromise);
         return __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_pendingPromise);
     }
@@ -88,7 +90,6 @@ class InnertubeLoader {
         __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_innertube).session.context.client.hl = language;
     }
 }
-exports.default = InnertubeLoader;
 _a = InnertubeLoader, _InnertubeLoader_handleAuthEvent = function _InnertubeLoader_handleAuthEvent(event, innertube, auth, resolve) {
     if (!__classPrivateFieldGet(this, _a, "f", _InnertubeLoader_pendingPromise)) {
         return;
@@ -118,4 +119,5 @@ _a = InnertubeLoader, _InnertubeLoader_handleAuthEvent = function _InnertubeLoad
 _InnertubeLoader_innertube = { value: null };
 _InnertubeLoader_auth = { value: null };
 _InnertubeLoader_pendingPromise = { value: null };
+exports.default = InnertubeLoader;
 //# sourceMappingURL=InnertubeLoader.js.map

@@ -1,12 +1,12 @@
 import yt2 from '../../../YouTube2Context';
 import { ModelType } from '../../../model';
 import InnertubeLoader from '../../../model/InnertubeLoader';
-import { ContentItem, PageElement } from '../../../types';
-import { PageContent } from '../../../types/Content';
-import { BrowseEndpoint, EndpointType } from '../../../types/Endpoint';
-import { SectionItem } from '../../../types/PageElement';
+import { type ContentItem, type PageElement } from '../../../types';
+import { type PageContent } from '../../../types/Content';
+import { type BrowseEndpoint, EndpointType } from '../../../types/Endpoint';
+import { type SectionItem } from '../../../types/PageElement';
 import { AuthStatus } from '../../../util/Auth';
-import GenericViewHandler, { GenericView } from './GenericViewHandler';
+import GenericViewHandler, { type GenericView } from './GenericViewHandler';
 
 const CHANNEL_DISPLAY_LIMIT = 6;
 

@@ -1,5 +1,5 @@
 import { BaseModel } from './BaseModel';
-import { I18nOptions, PluginConfigSchema } from '../types/PluginConfig';
+import { type I18nOptions, type PluginConfigSchema } from '../types/PluginConfig';
 export declare const PLUGIN_CONFIG_SCHEMA: PluginConfigSchema;
 export default class ConfigModel extends BaseModel {
     #private;
@@ -13,5 +13,21 @@ export default class ConfigModel extends BaseModel {
         label: string;
         value: string;
     }[];
+    getDefaultI18nOptions(): {
+        region: {
+            label: string;
+            optionValues: {
+                label: string;
+                value: string;
+            }[];
+        };
+        language: {
+            label: string;
+            optionValues: {
+                label: string;
+                value: string;
+            }[];
+        };
+    };
 }
 //# sourceMappingURL=ConfigModel.d.ts.map

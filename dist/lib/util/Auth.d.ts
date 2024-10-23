@@ -1,5 +1,5 @@
-/// <reference types="node" />
-import Innertube, { Utils as YTUtils } from 'volumio-youtubei.js';
+import { type Utils as YTUtils } from 'volumio-youtubei.js';
+import type Innertube from 'volumio-youtubei.js';
 import EventEmitter from 'events';
 export declare enum AuthStatus {
     SignedIn = "SignedIn",
@@ -13,7 +13,7 @@ export interface AuthStatusInfo {
         verificationUrl: string;
         userCode: string;
     } | null;
-    error?: YTUtils.OAuthError;
+    error?: YTUtils.OAuth2Error;
 }
 export declare enum AuthEvent {
     SignIn = "SignIn",

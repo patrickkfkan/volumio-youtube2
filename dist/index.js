@@ -242,7 +242,7 @@ class ControllerYouTube2 {
     async configSignOut() {
         if (InnertubeLoader_1.default.hasInstance()) {
             const { auth } = await InnertubeLoader_1.default.getInstance();
-            auth.signOut();
+            void auth.signOut();
         }
     }
     configSaveBrowse(data) {
@@ -369,6 +369,9 @@ class ControllerYouTube2 {
                 YouTube2Context_1.default.toast('error', errMsg);
                 defer.reject(Error(errMsg));
             }
+        })
+            .catch((error) => {
+            YouTube2Context_1.default.getLogger().error(YouTube2Context_1.default.getErrorMessage('[youtube2] Error obtaining goto URL:', error));
         });
         return defer.promise;
     }
@@ -379,20 +382,28 @@ class ControllerYouTube2 {
 _ControllerYouTube2_context = new WeakMap(), _ControllerYouTube2_config = new WeakMap(), _ControllerYouTube2_commandRouter = new WeakMap(), _ControllerYouTube2_browseController = new WeakMap(), _ControllerYouTube2_searchController = new WeakMap(), _ControllerYouTube2_playController = new WeakMap(), _ControllerYouTube2_nowPlayingMetadataProvider = new WeakMap(), _ControllerYouTube2_instances = new WeakSet(), _ControllerYouTube2_getConfigI18nOptions = function _ControllerYouTube2_getConfigI18nOptions() {
     const defer = kew_1.default.defer();
     const model = model_1.default.getInstance(model_1.ModelType.Config);
+    const selected = {
+        region: { label: '', value: '' },
+        language: { label: '', value: '' }
+    };
     model.getI18nOptions().then((options) => {
         const selectedValues = {
             region: YouTube2Context_1.default.getConfigValue('region'),
             language: YouTube2Context_1.default.getConfigValue('language')
-        };
-        const selected = {
-            region: { label: '', value: '' },
-            language: { label: '', value: '' }
         };
         Object.keys(selected).forEach((key) => {
             selected[key] = options[key]?.optionValues.find((ov) => ov.value === selectedValues[key]) || { label: '', value: selectedValues[key] };
         });
         defer.resolve({
             options,
+            selected
+        });
+    })
+        .catch((error) => {
+        YouTube2Context_1.default.getLogger().error(YouTube2Context_1.default.getErrorMessage('[youtube2] Error getting i18n options:', error));
+        YouTube2Context_1.default.toast('warning', 'Could not obtain i18n options');
+        defer.resolve({
+            options: model.getDefaultI18nOptions(),
             selected
         });
     });
@@ -404,7 +415,7 @@ _ControllerYouTube2_context = new WeakMap(), _ControllerYouTube2_config = new We
         defer.resolve(account);
     })
         .catch((error) => {
-        YouTube2Context_1.default.getLogger().warn(`[youtube2] Failed to get account config: ${error}`);
+        YouTube2Context_1.default.getLogger().warn(YouTube2Context_1.default.getErrorMessage('[youtube2] Failed to get account config:', error));
         defer.resolve(null);
     });
     return defer.promise;
@@ -414,7 +425,7 @@ _ControllerYouTube2_context = new WeakMap(), _ControllerYouTube2_config = new We
         defer.resolve(auth.getStatus());
     })
         .catch((error) => {
-        YouTube2Context_1.default.getLogger().warn(`[youtube2] Failed to get auth status: ${error}`);
+        YouTube2Context_1.default.getLogger().warn(YouTube2Context_1.default.getErrorMessage('[youtube2] Failed to get auth status:', error));
         defer.resolve(null);
     });
     return defer.promise;

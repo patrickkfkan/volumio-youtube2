@@ -1,12 +1,14 @@
 import yt2 from '../../../YouTube2Context';
 import { ModelType } from '../../../model';
 import InnertubeLoader from '../../../model/InnertubeLoader';
-import { PageContent, WatchContent } from '../../../types/Content';
-import Endpoint, { EndpointType, WatchEndpoint } from '../../../types/Endpoint';
+import { type PageContent, type WatchContent } from '../../../types/Content';
+import {type WatchEndpoint} from '../../../types/Endpoint';
+import type Endpoint from '../../../types/Endpoint';
+import { EndpointType } from '../../../types/Endpoint';
 import { AuthStatus } from '../../../util/Auth';
 import EndpointHelper from '../../../util/EndpointHelper';
 import ExplodeHelper from '../../../util/ExplodeHelper';
-import FeedViewHandler, { FeedView } from './FeedViewHandler';
+import FeedViewHandler, { type FeedView } from './FeedViewHandler';
 
 // From InnerTube lib (YouTube.js#Actions)
 const REQUIRES_SIGNIN_BROWSE_IDS = [
@@ -117,7 +119,7 @@ export default class GenericViewHandler<V extends Omit<GenericView, 'name'> & { 
     return result;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   protected getEndpoint(explode = false): Endpoint | null {
     const view = this.currentView;
     if (view.continuation) {

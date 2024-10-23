@@ -7,16 +7,16 @@ import vconf from 'v-conf';
 
 import yt2 from './lib/YouTube2Context';
 import BrowseController from './lib/controller/browse';
-import SearchController, { SearchQuery } from './lib/controller/search/SearchController';
+import SearchController, { type SearchQuery } from './lib/controller/search/SearchController';
 import PlayController from './lib/controller/play/PlayController';
 import { jsPromiseToKew } from './lib/util';
 import { AuthStatus } from './lib/util/Auth';
 import Model, { ModelType } from './lib/model';
-import { Account, I18nOptionValue, I18nOptions } from './lib/types/PluginConfig';
-import { QueueItem } from './lib/controller/browse/view-handlers/ExplodableViewHandler';
+import { type Account, type I18nOptionValue, type I18nOptions } from './lib/types/PluginConfig';
+import { type QueueItem } from './lib/controller/browse/view-handlers/ExplodableViewHandler';
 import ViewHelper from './lib/controller/browse/view-handlers/ViewHelper';
 import InnertubeLoader from './lib/model/InnertubeLoader';
-import { NowPlayingPluginSupport } from 'now-playing-common';
+import { type NowPlayingPluginSupport } from 'now-playing-common';
 import YouTube2NowPlayingMetadataProvider from './lib/util/YouTube2NowPlayingMetadataProvider';
 
 interface GotoParams extends QueueItem {
@@ -233,14 +233,14 @@ class ControllerYouTube2 implements NowPlayingPluginSupport {
     const defer = libQ.defer();
 
     const model = Model.getInstance(ModelType.Config);
+    const selected: Record<keyof I18nOptions, I18nOptionValue> = {
+      region: { label: '', value: '' },
+      language: { label: '', value: '' }
+    };
     model.getI18nOptions().then((options) => {
       const selectedValues = {
         region: yt2.getConfigValue('region'),
         language: yt2.getConfigValue('language')
-      };
-      const selected: Record<keyof I18nOptions, I18nOptionValue> = {
-        region: { label: '', value: '' },
-        language: { label: '', value: '' }
       };
       (Object.keys(selected) as (keyof I18nOptions)[]).forEach((key) => {
         selected[key] = options[key]?.optionValues.find((ov) => ov.value === selectedValues[key]) || { label: '', value: selectedValues[key] };
@@ -250,6 +250,14 @@ class ControllerYouTube2 implements NowPlayingPluginSupport {
         options,
         selected
       });
+    })
+    .catch((error: unknown) => {
+      yt2.getLogger().error(yt2.getErrorMessage('[youtube2] Error getting i18n options:', error));
+      yt2.toast('warning', 'Could not obtain i18n options');
+      defer.resolve({
+        options: model.getDefaultI18nOptions(),
+        selected
+      })
     });
 
     return defer.promise;
@@ -262,8 +270,8 @@ class ControllerYouTube2 implements NowPlayingPluginSupport {
     model.getInfo().then((account) => {
       defer.resolve(account);
     })
-      .catch((error) => {
-        yt2.getLogger().warn(`[youtube2] Failed to get account config: ${error}`);
+      .catch((error: unknown) => {
+        yt2.getLogger().warn(yt2.getErrorMessage('[youtube2] Failed to get account config:', error));
         defer.resolve(null);
       });
 
@@ -276,8 +284,8 @@ class ControllerYouTube2 implements NowPlayingPluginSupport {
     InnertubeLoader.getInstance().then(({ auth }) => {
       defer.resolve(auth.getStatus());
     })
-      .catch((error) => {
-        yt2.getLogger().warn(`[youtube2] Failed to get auth status: ${error}`);
+      .catch((error: unknown) => {
+        yt2.getLogger().warn(yt2.getErrorMessage('[youtube2] Failed to get auth status:', error));
         defer.resolve(null);
       });
 
@@ -305,7 +313,7 @@ class ControllerYouTube2 implements NowPlayingPluginSupport {
   async configSignOut() {
     if (InnertubeLoader.hasInstance()) {
       const { auth } = await InnertubeLoader.getInstance();
-      auth.signOut();
+      void auth.signOut();
     }
   }
 
@@ -496,6 +504,9 @@ class ControllerYouTube2 implements NowPlayingPluginSupport {
         yt2.toast('error', errMsg);
         defer.reject(Error(errMsg));
       }
+    })
+    .catch((error: unknown) => {
+      yt2.getLogger().error(yt2.getErrorMessage('[youtube2] Error obtaining goto URL:', error));
     });
 
     return defer.promise;

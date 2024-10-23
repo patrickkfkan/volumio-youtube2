@@ -25,17 +25,19 @@ export default class InnertubeLoader {
       return this.#pendingPromise;
     }
 
-    this.#pendingPromise = new Promise(async (resolve) => {
-      yt2.getLogger().info('[youtube2] InnertubeLoader: creating Innertube instance...');
-      this.#innertube = await Innertube.create();
-      this.applyI18nConfig();
-
-      yt2.getLogger().info('[youtube2] InnertubeLoader: creating Auth instance...');
-      this.#auth = Auth.create(this.#innertube);
-      this.#auth.on(AuthEvent.SignIn, this.#handleAuthEvent.bind(this, AuthEvent.SignIn, this.#innertube, this.#auth, resolve));
-      this.#auth.on(AuthEvent.Pending, this.#handleAuthEvent.bind(this, AuthEvent.Pending, this.#innertube, this.#auth, resolve));
-      this.#auth.on(AuthEvent.Error, this.#handleAuthEvent.bind(this, AuthEvent.Error, this.#innertube, this.#auth, resolve));
-      this.#auth.signIn();
+    this.#pendingPromise = new Promise((resolve) => {
+      void (async() => {
+        yt2.getLogger().info('[youtube2] InnertubeLoader: creating Innertube instance...');
+        this.#innertube = await Innertube.create();
+        this.applyI18nConfig();
+  
+        yt2.getLogger().info('[youtube2] InnertubeLoader: creating Auth instance...');
+        this.#auth = Auth.create(this.#innertube);
+        this.#auth.on(AuthEvent.SignIn, this.#handleAuthEvent.bind(this, AuthEvent.SignIn, this.#innertube, this.#auth, resolve));
+        this.#auth.on(AuthEvent.Pending, this.#handleAuthEvent.bind(this, AuthEvent.Pending, this.#innertube, this.#auth, resolve));
+        this.#auth.on(AuthEvent.Error, this.#handleAuthEvent.bind(this, AuthEvent.Error, this.#innertube, this.#auth, resolve));
+        this.#auth.signIn();
+      })();
     });
 
     return this.#pendingPromise;

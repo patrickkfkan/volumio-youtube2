@@ -1,4 +1,4 @@
-import { PluginConfig } from '../types';
+import { type PluginConfig } from '../types';
 import { EndpointType } from '../types/Endpoint';
 import { AuthStatus } from '../util/Auth';
 import { BaseModel } from './BaseModel';
