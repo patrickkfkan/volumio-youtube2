@@ -67,7 +67,7 @@ export default class Auth extends EventEmitter {
         userCode: data.user_code
       }
     });
-
+    yt2.getLogger().info(`[youtube2] Obtained device code for sign-in (expires in ${data.expires_in} seconds)`);
     yt2.refreshUIConfig();
     this.emit(AuthEvent.Pending);
   }
@@ -91,18 +91,15 @@ export default class Auth extends EventEmitter {
 
   #handleError(err: YTUtils.OAuth2Error) {
     if (err.info.error === 'expired_token') {
-      yt2.set('authStatusInfo', INITIAL_SIGNED_OUT_STATUS);
+      yt2.getLogger().info('[youtube2] Device code for sign-in expired - refetch');
+      this.signIn(); // This will refetch the code and refresh UI config
+      return;
     }
-    else {
-      yt2.set<AuthStatusInfo>('authStatusInfo', {
-        status: AuthStatus.Error,
-        error: err
-      });
-
-      yt2.toast('error', yt2.getI18n('YOUTUBE2_ERR_SIGN_IN',
-        yt2.getErrorMessage('', err, false)));
-    }
-
+    yt2.set<AuthStatusInfo>('authStatusInfo', {
+      status: AuthStatus.Error,
+      error: err
+    });
+    yt2.toast('error', yt2.getI18n('YOUTUBE2_ERR_SIGN_IN', yt2.getErrorMessage('', err, false)));
     yt2.refreshUIConfig();
     this.emit(AuthEvent.Error);
   }
@@ -132,13 +129,18 @@ export default class Auth extends EventEmitter {
         yt2.set<AuthStatusInfo>('authStatusInfo', {
           status: AuthStatus.SigningIn
         });
+        yt2.getLogger().info('[youtube2] Attempt sign-in with existing credentials');
       }
       else {
         yt2.set('authStatusInfo', INITIAL_SIGNED_OUT_STATUS);
+        yt2.getLogger().info('[youtube2] Obtaining device code for sign-in...');
       }
 
       yt2.refreshUIConfig();
-      void this.#innertube.session.signIn(credentials);
+      this.#innertube.session.signIn(credentials)
+      .catch((error: unknown) => {
+        yt2.getLogger().error(yt2.getErrorMessage('[youtube2] Caught Innertube sign-in error:', error, false));
+      });
     }
   }
 

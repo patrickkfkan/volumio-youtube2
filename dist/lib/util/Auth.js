@@ -67,12 +67,17 @@ class Auth extends events_1.default {
                 YouTube2Context_1.default.set('authStatusInfo', {
                     status: AuthStatus.SigningIn
                 });
+                YouTube2Context_1.default.getLogger().info('[youtube2] Attempt sign-in with existing credentials');
             }
             else {
                 YouTube2Context_1.default.set('authStatusInfo', INITIAL_SIGNED_OUT_STATUS);
+                YouTube2Context_1.default.getLogger().info('[youtube2] Obtaining device code for sign-in...');
             }
             YouTube2Context_1.default.refreshUIConfig();
-            void __classPrivateFieldGet(this, _Auth_innertube, "f").session.signIn(credentials);
+            __classPrivateFieldGet(this, _Auth_innertube, "f").session.signIn(credentials)
+                .catch((error) => {
+                YouTube2Context_1.default.getLogger().error(YouTube2Context_1.default.getErrorMessage('[youtube2] Caught Innertube sign-in error:', error, false));
+            });
         }
     }
     async signOut() {
@@ -97,6 +102,7 @@ _Auth_innertube = new WeakMap(), _Auth_handlers = new WeakMap(), _Auth_instances
             userCode: data.user_code
         }
     });
+    YouTube2Context_1.default.getLogger().info(`[youtube2] Obtained device code for sign-in (expires in ${data.expires_in} seconds)`);
     YouTube2Context_1.default.refreshUIConfig();
     this.emit(AuthEvent.Pending);
 }, _Auth_handleSuccess = function _Auth_handleSuccess(data) {
@@ -116,15 +122,15 @@ _Auth_innertube = new WeakMap(), _Auth_handlers = new WeakMap(), _Auth_instances
     }
 }, _Auth_handleError = function _Auth_handleError(err) {
     if (err.info.error === 'expired_token') {
-        YouTube2Context_1.default.set('authStatusInfo', INITIAL_SIGNED_OUT_STATUS);
+        YouTube2Context_1.default.getLogger().info('[youtube2] Device code for sign-in expired - refetch');
+        this.signIn(); // This will refetch the code and refresh UI config
+        return;
     }
-    else {
-        YouTube2Context_1.default.set('authStatusInfo', {
-            status: AuthStatus.Error,
-            error: err
-        });
-        YouTube2Context_1.default.toast('error', YouTube2Context_1.default.getI18n('YOUTUBE2_ERR_SIGN_IN', YouTube2Context_1.default.getErrorMessage('', err, false)));
-    }
+    YouTube2Context_1.default.set('authStatusInfo', {
+        status: AuthStatus.Error,
+        error: err
+    });
+    YouTube2Context_1.default.toast('error', YouTube2Context_1.default.getI18n('YOUTUBE2_ERR_SIGN_IN', YouTube2Context_1.default.getErrorMessage('', err, false)));
     YouTube2Context_1.default.refreshUIConfig();
     this.emit(AuthEvent.Error);
 }, _Auth_registerHandlers = function _Auth_registerHandlers() {
