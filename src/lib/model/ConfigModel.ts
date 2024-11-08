@@ -78,7 +78,7 @@ export default class ConfigModel extends BaseModel {
     };
 
     let noCache = false;
-    const contents = await this.#fetchAccountMenu();
+    const contents = await this.fetchAccountMenu();
     const languageMenu = findInObject(contents, __createPredicate('selectLanguageCommand', 'hl'))?.[0];
     const regionMenu = findInObject(contents, __createPredicate('selectCountryCommand', 'gl'))?.[0];
 
@@ -127,30 +127,7 @@ export default class ConfigModel extends BaseModel {
     yt2.set('configI18nOptions', null);
   }
 
-  async #fetchAccountMenu() {
-    const { innertube } = await this.getInnertube();
-
-    const requestData = {
-      client: 'WEB'
-    };
-
-    try {
-      const response = await innertube.session.http.fetch('/account/account_menu', {
-        method: 'POST',
-        body: JSON.stringify(requestData),
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      return JSON.parse(await response.text());
-    }
-    catch (error) {
-      yt2.getLogger().error(yt2.getErrorMessage('[youtube2] Error in ConfigModel.#fetchAccountMenu(): ', error));
-      return null;
-    }
-  }
-
+  
   getRootContentTypeOptions() {
     return [
       {
