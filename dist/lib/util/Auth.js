@@ -13,7 +13,7 @@ var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-var _Auth_instances, _Auth_innertube, _Auth_handlers, _Auth_handlePending, _Auth_handleSuccess, _Auth_handleError, _Auth_registerHandlers, _Auth_unregisterHandlers;
+var _Auth_instances, _Auth_innertube, _Auth_handlers, _Auth_handlersRegistered, _Auth_handlePending, _Auth_handleSuccess, _Auth_handleError, _Auth_registerHandlers, _Auth_unregisterHandlers;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthEvent = exports.AuthStatus = void 0;
 const YouTube2Context_1 = __importDefault(require("../YouTube2Context"));
@@ -32,6 +32,7 @@ const INITIAL_SIGNED_OUT_STATUS = {
 var AuthEvent;
 (function (AuthEvent) {
     AuthEvent["SignIn"] = "SignIn";
+    AuthEvent["SignOut"] = "SignOut";
     AuthEvent["Pending"] = "Pending";
     AuthEvent["Error"] = "Error";
 })(AuthEvent || (exports.AuthEvent = AuthEvent = {}));
@@ -41,7 +42,9 @@ class Auth extends events_1.default {
         _Auth_instances.add(this);
         _Auth_innertube.set(this, void 0);
         _Auth_handlers.set(this, void 0);
+        _Auth_handlersRegistered.set(this, void 0);
         __classPrivateFieldSet(this, _Auth_innertube, null, "f");
+        __classPrivateFieldSet(this, _Auth_handlersRegistered, false, "f");
     }
     static create(innertube) {
         const auth = new Auth();
@@ -52,7 +55,6 @@ class Auth extends events_1.default {
             onError: __classPrivateFieldGet(auth, _Auth_instances, "m", _Auth_handleError).bind(auth),
             onCredentials: __classPrivateFieldGet(auth, _Auth_instances, "m", _Auth_handleSuccess).bind(auth)
         }, "f");
-        __classPrivateFieldGet(auth, _Auth_instances, "m", _Auth_registerHandlers).call(auth);
         return auth;
     }
     dispose() {
@@ -73,8 +75,21 @@ class Auth extends events_1.default {
                 YouTube2Context_1.default.set('authStatusInfo', INITIAL_SIGNED_OUT_STATUS);
                 YouTube2Context_1.default.getLogger().info('[youtube2] Obtaining device code for sign-in...');
             }
+            __classPrivateFieldGet(this, _Auth_instances, "m", _Auth_registerHandlers).call(this);
             YouTube2Context_1.default.refreshUIConfig();
             __classPrivateFieldGet(this, _Auth_innertube, "f").session.signIn(credentials)
+                .then(() => {
+                const oldStatusInfo = YouTube2Context_1.default.get('authStatusInfo');
+                if (__classPrivateFieldGet(this, _Auth_innertube, "f")?.session.logged_in && (!oldStatusInfo || oldStatusInfo.status !== AuthStatus.SignedIn)) {
+                    YouTube2Context_1.default.set('authStatusInfo', {
+                        status: AuthStatus.SignedIn
+                    });
+                    YouTube2Context_1.default.getLogger().info('[youtube2] Auth success');
+                    YouTube2Context_1.default.toast('success', YouTube2Context_1.default.getI18n('YOUTUBE2_SIGN_IN_SUCCESS'));
+                    YouTube2Context_1.default.refreshUIConfig();
+                    this.emit(AuthEvent.SignIn);
+                }
+            })
                 .catch((error) => {
                 YouTube2Context_1.default.getLogger().error(YouTube2Context_1.default.getErrorMessage('[youtube2] Caught Innertube sign-in error:', error, false));
             });
@@ -84,17 +99,18 @@ class Auth extends events_1.default {
         if (__classPrivateFieldGet(this, _Auth_innertube, "f")?.session?.logged_in) {
             await __classPrivateFieldGet(this, _Auth_innertube, "f").session.signOut();
             YouTube2Context_1.default.deleteConfigValue('authCredentials');
+            YouTube2Context_1.default.set('authStatusInfo', INITIAL_SIGNED_OUT_STATUS);
+            YouTube2Context_1.default.getLogger().info('[youtube2] Auth revoked');
             YouTube2Context_1.default.toast('success', YouTube2Context_1.default.getI18n('YOUTUBE2_SIGNED_OUT'));
-            // Sign in again with empty credentials to reset status to SIGNED_OUT
-            // And obtain new device code
-            this.signIn();
+            this.emit(AuthEvent.SignOut);
+            YouTube2Context_1.default.refreshUIConfig();
         }
     }
     getStatus() {
         return YouTube2Context_1.default.get('authStatusInfo') || INITIAL_SIGNED_OUT_STATUS;
     }
 }
-_Auth_innertube = new WeakMap(), _Auth_handlers = new WeakMap(), _Auth_instances = new WeakSet(), _Auth_handlePending = function _Auth_handlePending(data) {
+_Auth_innertube = new WeakMap(), _Auth_handlers = new WeakMap(), _Auth_handlersRegistered = new WeakMap(), _Auth_instances = new WeakSet(), _Auth_handlePending = function _Auth_handlePending(data) {
     YouTube2Context_1.default.set('authStatusInfo', {
         status: AuthStatus.SignedOut,
         verificationInfo: {
@@ -106,20 +122,8 @@ _Auth_innertube = new WeakMap(), _Auth_handlers = new WeakMap(), _Auth_instances
     YouTube2Context_1.default.refreshUIConfig();
     this.emit(AuthEvent.Pending);
 }, _Auth_handleSuccess = function _Auth_handleSuccess(data) {
-    const oldStatusInfo = YouTube2Context_1.default.get('authStatusInfo');
-    YouTube2Context_1.default.set('authStatusInfo', {
-        status: AuthStatus.SignedIn
-    });
     YouTube2Context_1.default.setConfigValue('authCredentials', data.credentials);
-    if (!oldStatusInfo || oldStatusInfo.status !== AuthStatus.SignedIn) {
-        YouTube2Context_1.default.getLogger().info('[youtube2] Auth success');
-        YouTube2Context_1.default.toast('success', YouTube2Context_1.default.getI18n('YOUTUBE2_SIGN_IN_SUCCESS'));
-        YouTube2Context_1.default.refreshUIConfig();
-        this.emit(AuthEvent.SignIn);
-    }
-    else {
-        YouTube2Context_1.default.getLogger().info('[youtube2] Auth credentials updated');
-    }
+    YouTube2Context_1.default.getLogger().info('[youtube2] Auth credentials updated');
 }, _Auth_handleError = function _Auth_handleError(err) {
     if (err.info.error === 'expired_token') {
         YouTube2Context_1.default.getLogger().info('[youtube2] Device code for sign-in expired - refetch');
@@ -134,11 +138,12 @@ _Auth_innertube = new WeakMap(), _Auth_handlers = new WeakMap(), _Auth_instances
     YouTube2Context_1.default.refreshUIConfig();
     this.emit(AuthEvent.Error);
 }, _Auth_registerHandlers = function _Auth_registerHandlers() {
-    if (__classPrivateFieldGet(this, _Auth_innertube, "f")?.session) {
+    if (__classPrivateFieldGet(this, _Auth_innertube, "f")?.session && !__classPrivateFieldGet(this, _Auth_handlersRegistered, "f")) {
         __classPrivateFieldGet(this, _Auth_innertube, "f").session.on('auth', __classPrivateFieldGet(this, _Auth_handlers, "f").onSuccess);
         __classPrivateFieldGet(this, _Auth_innertube, "f").session.on('auth-pending', __classPrivateFieldGet(this, _Auth_handlers, "f").onPending);
         __classPrivateFieldGet(this, _Auth_innertube, "f").session.on('auth-error', __classPrivateFieldGet(this, _Auth_handlers, "f").onError);
         __classPrivateFieldGet(this, _Auth_innertube, "f").session.on('update-credentials', __classPrivateFieldGet(this, _Auth_handlers, "f").onCredentials);
+        __classPrivateFieldSet(this, _Auth_handlersRegistered, true, "f");
     }
 }, _Auth_unregisterHandlers = function _Auth_unregisterHandlers() {
     if (__classPrivateFieldGet(this, _Auth_innertube, "f")?.session) {
@@ -147,6 +152,7 @@ _Auth_innertube = new WeakMap(), _Auth_handlers = new WeakMap(), _Auth_instances
         __classPrivateFieldGet(this, _Auth_innertube, "f").session.off('auth-error', __classPrivateFieldGet(this, _Auth_handlers, "f").onError);
         __classPrivateFieldGet(this, _Auth_innertube, "f").session.off('update-credentials', __classPrivateFieldGet(this, _Auth_handlers, "f").onCredentials);
     }
+    __classPrivateFieldSet(this, _Auth_handlersRegistered, false, "f");
 };
 exports.default = Auth;
 //# sourceMappingURL=Auth.js.map

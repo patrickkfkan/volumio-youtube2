@@ -26,6 +26,7 @@ const INITIAL_SIGNED_OUT_STATUS: AuthStatusInfo = {
 
 export enum AuthEvent {
   SignIn = 'SignIn',
+  SignOut = 'SignOut',
   Pending = 'Pending',
   Error = 'Error'
 }
@@ -34,10 +35,12 @@ export default class Auth extends EventEmitter {
 
   #innertube: Innertube | null;
   #handlers: any;
+  #handlersRegistered: boolean;
 
   constructor() {
     super();
     this.#innertube = null;
+    this.#handlersRegistered = false;
   }
 
   static create(innertube: Innertube) {
@@ -49,7 +52,6 @@ export default class Auth extends EventEmitter {
       onError: auth.#handleError.bind(auth),
       onCredentials: auth.#handleSuccess.bind(auth)
     };
-    auth.#registerHandlers();
     return auth;
   }
 
@@ -73,20 +75,8 @@ export default class Auth extends EventEmitter {
   }
 
   #handleSuccess(data: { credentials: OAuth2Tokens }) {
-    const oldStatusInfo = yt2.get<AuthStatusInfo>('authStatusInfo');
-    yt2.set<AuthStatusInfo>('authStatusInfo', {
-      status: AuthStatus.SignedIn
-    });
     yt2.setConfigValue('authCredentials', data.credentials);
-    if (!oldStatusInfo || oldStatusInfo.status !== AuthStatus.SignedIn) {
-      yt2.getLogger().info('[youtube2] Auth success');
-      yt2.toast('success', yt2.getI18n('YOUTUBE2_SIGN_IN_SUCCESS'));
-      yt2.refreshUIConfig();
-      this.emit(AuthEvent.SignIn);
-    }
-    else {
-      yt2.getLogger().info('[youtube2] Auth credentials updated');
-    }
+    yt2.getLogger().info('[youtube2] Auth credentials updated');
   }
 
   #handleError(err: YTUtils.OAuth2Error) {
@@ -105,11 +95,12 @@ export default class Auth extends EventEmitter {
   }
 
   #registerHandlers() {
-    if (this.#innertube?.session) {
+    if (this.#innertube?.session && !this.#handlersRegistered) {
       this.#innertube.session.on('auth', this.#handlers.onSuccess);
       this.#innertube.session.on('auth-pending', this.#handlers.onPending);
       this.#innertube.session.on('auth-error', this.#handlers.onError);
       this.#innertube.session.on('update-credentials', this.#handlers.onCredentials);
+      this.#handlersRegistered = true;
     }
   }
 
@@ -120,6 +111,7 @@ export default class Auth extends EventEmitter {
       this.#innertube.session.off('auth-error', this.#handlers.onError);
       this.#innertube.session.off('update-credentials', this.#handlers.onCredentials);
     }
+    this.#handlersRegistered = false;
   }
 
   signIn() {
@@ -136,8 +128,21 @@ export default class Auth extends EventEmitter {
         yt2.getLogger().info('[youtube2] Obtaining device code for sign-in...');
       }
 
+      this.#registerHandlers();
       yt2.refreshUIConfig();
       this.#innertube.session.signIn(credentials)
+      .then(() => {
+        const oldStatusInfo = yt2.get<AuthStatusInfo>('authStatusInfo');
+        if (this.#innertube?.session.logged_in && (!oldStatusInfo || oldStatusInfo.status !== AuthStatus.SignedIn)) {
+          yt2.set<AuthStatusInfo>('authStatusInfo', {
+            status: AuthStatus.SignedIn
+          });
+          yt2.getLogger().info('[youtube2] Auth success');
+          yt2.toast('success', yt2.getI18n('YOUTUBE2_SIGN_IN_SUCCESS'));
+          yt2.refreshUIConfig();
+          this.emit(AuthEvent.SignIn);
+        }
+      })
       .catch((error: unknown) => {
         yt2.getLogger().error(yt2.getErrorMessage('[youtube2] Caught Innertube sign-in error:', error, false));
       });
@@ -149,12 +154,13 @@ export default class Auth extends EventEmitter {
       await this.#innertube.session.signOut();
 
       yt2.deleteConfigValue('authCredentials');
+      yt2.set<AuthStatusInfo>('authStatusInfo', INITIAL_SIGNED_OUT_STATUS);
 
+      yt2.getLogger().info('[youtube2] Auth revoked');
       yt2.toast('success', yt2.getI18n('YOUTUBE2_SIGNED_OUT'));
 
-      // Sign in again with empty credentials to reset status to SIGNED_OUT
-      // And obtain new device code
-      this.signIn();
+      this.emit(AuthEvent.SignOut);
+      yt2.refreshUIConfig();
     }
   }
 

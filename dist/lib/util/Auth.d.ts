@@ -17,6 +17,7 @@ export interface AuthStatusInfo {
 }
 export declare enum AuthEvent {
     SignIn = "SignIn",
+    SignOut = "SignOut",
     Pending = "Pending",
     Error = "Error"
 }
