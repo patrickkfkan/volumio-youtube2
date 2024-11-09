@@ -806,6 +806,23 @@ export default class InnertubeResultParser {
         }
         return null;
       }
+      case 'LockupView': {
+        const lvData = data as YTNodes.LockupView;
+        const lvDataTitle = this.unwrap(lvData.metadata?.title);
+        const lvDataEndpoint = this.parseEndpoint(lvData.on_tap_endpoint, EndpointType.Watch);
+        if (lvDataTitle && lvDataEndpoint) {
+          const playlistItem: ContentItem.Playlist = {
+            type: 'playlist',
+            playlistId: lvData.content_id,
+            title: lvDataTitle,
+            thumbnail: this.parseThumbnail(lvData.content_image?.primary_thumbnail?.image) || undefined,
+            endpoint: lvDataEndpoint,
+            isMix: true
+          }
+          return playlistItem;
+        }
+        return null;
+      }
       case 'Channel':
       case 'GridChannel': {
         const chData = data as YTNodes.Channel & YTNodes.GridChannel;

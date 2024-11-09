@@ -784,6 +784,23 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
             }
             return null;
         }
+        case 'LockupView': {
+            const lvData = data;
+            const lvDataTitle = this.unwrap(lvData.metadata?.title);
+            const lvDataEndpoint = this.parseEndpoint(lvData.on_tap_endpoint, Endpoint_1.EndpointType.Watch);
+            if (lvDataTitle && lvDataEndpoint) {
+                const playlistItem = {
+                    type: 'playlist',
+                    playlistId: lvData.content_id,
+                    title: lvDataTitle,
+                    thumbnail: this.parseThumbnail(lvData.content_image?.primary_thumbnail?.image) || undefined,
+                    endpoint: lvDataEndpoint,
+                    isMix: true
+                };
+                return playlistItem;
+            }
+            return null;
+        }
         case 'Channel':
         case 'GridChannel': {
             const chData = data;
