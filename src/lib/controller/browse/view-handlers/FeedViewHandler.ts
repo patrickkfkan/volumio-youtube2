@@ -91,12 +91,20 @@ export default abstract class FeedViewHandler<V extends FeedView = FeedView> ext
     // Disregard nested section when determining if every item is video, because
     // The nested section will be converted to separate list(s).
     const isAllVideos = section.items.every((item) => item.type === 'section' || item.type === 'video');
-    section.items?.forEach((item) => {
+    let fallbackTitle: string | undefined = undefined;
+    section.items?.forEach((item, index) => {
       if (item.type === 'section') {
         const nestedSectionToLists = this.#sectionToLists(contents, item, header);
         if (nestedSectionToLists.length > 0) {
-          listsForSection.push(...this.#sectionToLists(contents, item, header));
-          hasNestedSections = true;
+          const lists = this.#sectionToLists(contents, item, header);
+          // Special case: if empty nested section at beginning of list, use its title for fallback
+          if (index === 0 && lists.length === 1 && lists[0].items.length === 0 && lists[0].title) {
+            fallbackTitle = lists[0].title;
+          }
+          else {
+            listsForSection.push(...lists);
+            hasNestedSections = true;
+          }
         }
       }
       else {
@@ -126,10 +134,10 @@ export default abstract class FeedViewHandler<V extends FeedView = FeedView> ext
     const currentItemCount = prevItemCount + mainItems.length;
     const showingResultsText = mainItems.length > 0 && (section.continuation || (contents.type === 'page' && contents.isContinuation)) && isPlaylistContents ?
       yt2.getI18n('YOUTUBE2_SHOWING_RESULTS', prevItemCount + 1, currentItemCount) : null;
-    let sectionTitle = section.title;
+    let sectionTitle = section.title || fallbackTitle;
     if (showingResultsText) {
-      if (section.title) {
-        sectionTitle = `${section.title} (${showingResultsText.charAt(0).toLocaleLowerCase()}${showingResultsText.substring(1)})`;
+      if (sectionTitle) {
+        sectionTitle = `${sectionTitle} (${showingResultsText.charAt(0).toLocaleLowerCase()}${showingResultsText.substring(1)})`;
       }
       else {
         sectionTitle = showingResultsText;

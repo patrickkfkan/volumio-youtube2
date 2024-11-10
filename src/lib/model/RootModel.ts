@@ -41,14 +41,14 @@ export default class RootModel extends BaseModel {
   }
 
   #expandGuideEntry(entry: YTHelpers.YTNode): YTHelpers.YTNode[] {
-    if (entry instanceof YTNodes.GuideCollapsibleEntry) {
+    if (entry.is(YTNodes.GuideCollapsibleEntry)) {
       const collapsibleEntry = entry;
       return collapsibleEntry.expandable_items.reduce<YTHelpers.YTNode[]>((expanded, item) => {
         expanded.push(...this.#expandGuideEntry(item));
         return expanded;
       }, []);
     }
-    if (entry instanceof YTNodes.GuideCollapsibleSectionEntry) {
+    if (entry.is(YTNodes.GuideCollapsibleSectionEntry)) {
       const sectionEntry = entry;
       const initialExpanded = sectionEntry.header_entry ? this.#expandGuideEntry(sectionEntry.header_entry) : [];
       return sectionEntry.section_items.reduce<YTHelpers.YTNode[]>((expanded, item) => {

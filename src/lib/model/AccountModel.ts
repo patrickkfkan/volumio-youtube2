@@ -20,8 +20,8 @@ export default class AccountModel extends BaseModel {
 
     // This plugin supports single sign-in, so there should only be one account in contents.
     // But we still get the 'selected' one just to be sure.
-    const account = info.contents?.contents.find((ac) => ac instanceof YTNodes.AccountItem && ac.is_selected);
-    if (account instanceof YTNodes.AccountItem) {
+    const account = info.contents?.contents.find((ac) => ac.is(YTNodes.AccountItem) && ac.is_selected);
+    if (account?.is(YTNodes.AccountItem)) {
       const accountName = InnertubeResultParser.unwrap(account.account_name);
       if (accountName) {
         const result: PluginConfig.Account = {

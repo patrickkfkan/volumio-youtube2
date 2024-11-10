@@ -29,8 +29,8 @@ class AccountModel extends BaseModel_1.BaseModel {
         const info = await innertube.account.getInfo();
         // This plugin supports single sign-in, so there should only be one account in contents.
         // But we still get the 'selected' one just to be sure.
-        const account = info.contents?.contents.find((ac) => ac instanceof volumio_youtubei_js_1.YTNodes.AccountItem && ac.is_selected);
-        if (account instanceof volumio_youtubei_js_1.YTNodes.AccountItem) {
+        const account = info.contents?.contents.find((ac) => ac.is(volumio_youtubei_js_1.YTNodes.AccountItem) && ac.is_selected);
+        if (account?.is(volumio_youtubei_js_1.YTNodes.AccountItem)) {
             const accountName = InnertubeResultParser_1.default.unwrap(account.account_name);
             if (accountName) {
                 const result = {

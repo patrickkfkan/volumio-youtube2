@@ -86,8 +86,8 @@ export default class InnertubeResultParser {
           isContinuation: true,
           items: parsedItems
         };
-        const continuationItem = acItems.find((item) => item instanceof YTNodes.ContinuationItem) as YTNodes.ContinuationItem;
-        const parsedContinuation = this.#parseContinuationItem(continuationItem, EndpointType.WatchContinuation);
+        const continuationItem = acItems.find((item) => item.is(YTNodes.ContinuationItem))?.as(YTNodes.ContinuationItem);
+        const parsedContinuation = continuationItem ? this.#parseContinuationItem(continuationItem, EndpointType.WatchContinuation) : null;
         if (parsedContinuation) {
           watchContinuationContent.continuation = parsedContinuation;
         }
@@ -107,7 +107,7 @@ export default class InnertubeResultParser {
 
     const result: WatchContent = { type: 'watch', isContinuation: false };
 
-    if (dataContents instanceof YTNodes.TwoColumnWatchNextResults) {
+    if (!Array.isArray(dataContents) && dataContents.is(YTNodes.TwoColumnWatchNextResults)) {
       // Playlist items
       const playlistData = dataContents.playlist;
       if (playlistData) {
@@ -147,7 +147,7 @@ export default class InnertubeResultParser {
         result.related = {
           items: parsedItems.filter((item) => item?.type === 'video' || item?.type === 'playlist')
         };
-        const continuationItem = relatedItemList.find((item) => item instanceof YTNodes.ContinuationItem) as YTNodes.ContinuationItem;
+        const continuationItem = relatedItemList.find((item) => item.is(YTNodes.ContinuationItem)) as YTNodes.ContinuationItem;
         const parsedContinuation = this.#parseContinuationItem(continuationItem, EndpointType.WatchContinuation);
         if (parsedContinuation) {
           result.related.continuation = parsedContinuation;
@@ -166,7 +166,7 @@ export default class InnertubeResultParser {
       return null;
     }
 
-    if (dataContents instanceof YTNodes.TwoColumnSearchResults) {
+    if (!Array.isArray(dataContents) && dataContents.is(YTNodes.TwoColumnSearchResults)) {
       return this.#parseBrowseEndpointResult({ contents: dataContents.primary_contents });
     }
 
@@ -181,8 +181,8 @@ export default class InnertubeResultParser {
 
     if (itemContinuations && itemContinuations.length > 0) {
       const actionOrCommands = itemContinuations.filter((c) =>
-        c.type === 'appendContinuationItemsAction' ||
-        c.type === 'reloadContinuationItemsCommand');
+        c.type.toLowerCase() === 'AppendContinuationItemsAction'.toLowerCase() ||
+        c.type.toLowerCase() === 'ReloadContinuationItemsCommand'.toLowerCase());
       if (actionOrCommands) {
         const sections = actionOrCommands.reduce<PageElement.Section[]>((sections, ac) => {
           const parsedSection = this.#parseContentToSection({ content: this.unwrap(ac.contents) } as SectionContent);
@@ -224,7 +224,7 @@ export default class InnertubeResultParser {
     if (dataContents && !Array.isArray(dataContents) && dataContents.hasKey('tabs')) {
       const tabs = this.unwrap(dataContents.tabs);
       if (tabs && Array.isArray(tabs)) {
-        const reducedTabs = tabs.filter((tab) => !(tab.type instanceof YTNodes.ExpandableTab))
+        const reducedTabs = tabs.filter((tab) => !tab.is(YTNodes.ExpandableTab))
           .reduce((filtered, tab) => {
             const tabEndpoint = this.parseEndpoint(tab.endpoint, EndpointType.Browse, EndpointType.BrowseContinuation,
               EndpointType.Search, EndpointType.SearchContinuation);
@@ -276,12 +276,12 @@ export default class InnertubeResultParser {
       author: ContentItem.Author | null = null,
       shufflePlay: ContentItem.EndpointLink | null = null;
 
-    if (data instanceof YTNodes.FeedTabbedHeader) {
+    if (data.is(YTNodes.FeedTabbedHeader)) {
       type = 'feed';
       title = this.unwrap(data.title);
     }
     // Channel
-    else if (data instanceof YTNodes.C4TabbedHeader) {
+    else if (data.is(YTNodes.C4TabbedHeader)) {
       type = 'channel';
       title = this.unwrap(data.author?.name);
       thumbnail = this.parseThumbnail(data.author?.thumbnails);
@@ -302,7 +302,7 @@ export default class InnertubeResultParser {
       endpoint = this.parseEndpoint(data.author?.endpoint, EndpointType.Browse);
     }
     // E.g. Gaming channel
-    else if (data instanceof YTNodes.InteractiveTabbedHeader) {
+    else if (data.is(YTNodes.InteractiveTabbedHeader)) {
       type = 'channel';
       title = this.unwrap(data.title);
       thumbnail = this.parseThumbnail(data.box_art);
@@ -313,7 +313,7 @@ export default class InnertubeResultParser {
       description = this.unwrap(data.description);
     }
     // Playlist
-    else if (data instanceof YTNodes.PlaylistHeader) {
+    else if (data.is(YTNodes.PlaylistHeader)) {
       type = 'playlist';
       title = this.unwrap(data.title);
       if (data.stats) {
@@ -350,8 +350,8 @@ export default class InnertubeResultParser {
       }
     }
     // Topic
-    else if (data instanceof YTNodes.CarouselHeader) {
-      const details = data.contents.find((header) => header instanceof YTNodes.TopicChannelDetails) as YTNodes.TopicChannelDetails;
+    else if (data.is(YTNodes.CarouselHeader)) {
+      const details = data.contents.find((header) => header.is(YTNodes.TopicChannelDetails)) as YTNodes.TopicChannelDetails;
       if (details) {
         type = 'channel';
         title = this.unwrap(details.title);
@@ -365,7 +365,7 @@ export default class InnertubeResultParser {
       }
     }
     // Generic PageHeader - need to check if 'channel' type
-    else if (data instanceof YTNodes.PageHeader && metadata instanceof YTNodes.ChannelMetadata) {
+    else if (data.is(YTNodes.PageHeader) && metadata?.is(YTNodes.ChannelMetadata)) {
       type = 'channel';
       title = this.unwrap(data.content?.title?.text);
       description = metadata.description;
@@ -486,7 +486,7 @@ export default class InnertubeResultParser {
           section.items.push(parsedNested);
         }
       }
-      else if (contentItem instanceof YTNodes.ContinuationItem) {
+      else if (contentItem.is(YTNodes.ContinuationItem)) {
         const continuationItem = this.#parseContinuationItem(contentItem, EndpointType.BrowseContinuation, EndpointType.SearchContinuation);
         if (continuationItem) {
           section.continuation = continuationItem;
@@ -515,7 +515,7 @@ export default class InnertubeResultParser {
     const sectionFilters: PageElement.Option[] = [];
 
     // FeedFilterChipBar
-    if (dataHeader instanceof YTNodes.FeedFilterChipBar) {
+    if (dataHeader?.is(YTNodes.FeedFilterChipBar)) {
       const chips = dataHeader.contents;
       /**
        * Note that, unlike other 'option.optionValues' type arrays, we don't
@@ -541,7 +541,7 @@ export default class InnertubeResultParser {
     }
 
     // SectionList.SearchSubMenu
-    if (data.sub_menu instanceof YTNodes.SearchSubMenu) {
+    if (data.sub_menu?.is(YTNodes.SearchSubMenu)) {
       // One filter per group
       const searchFilters = data.sub_menu.groups?.reduce<PageElement.Option[]>((filters, group) => {
         const title = this.unwrap(group.title);
@@ -593,7 +593,7 @@ export default class InnertubeResultParser {
     const sectionMenus: PageElement.Option[] = [];
 
     // SectionList.ChannelSubMenu
-    if (data.sub_menu instanceof YTNodes.ChannelSubMenu) {
+    if (data.sub_menu?.is(YTNodes.ChannelSubMenu)) {
       const contentTypeMenu: PageElement.Option = {
         type: 'option',
         optionValues: data.sub_menu.content_type_sub_menu_items.reduce<PageElement.Option['optionValues']>(
@@ -619,7 +619,7 @@ export default class InnertubeResultParser {
       }
 
       const sortSetting = data.sub_menu.sort_setting; // SortFilterSubMenu
-      if (sortSetting instanceof YTNodes.SortFilterSubMenu && sortSetting.sub_menu_items) {
+      if (sortSetting?.is(YTNodes.SortFilterSubMenu) && sortSetting.sub_menu_items) {
         const sortFilterMenu: PageElement.Option = {
           type: 'option',
           title: sortSetting.title,
@@ -757,7 +757,7 @@ export default class InnertubeResultParser {
       }
       case 'GameCard': {
         const gcData = data as YTNodes.GameCard;
-        if (gcData.game instanceof YTNodes.GameDetails) {
+        if (gcData.game?.is(YTNodes.GameDetails)) {
           const gcDataName = this.unwrap(gcData.game.title);
           const gcDataEndpoint = this.parseEndpoint(gcData.game.endpoint, EndpointType.Browse);
           if (gcDataName && gcDataEndpoint) {
@@ -820,6 +820,24 @@ export default class InnertubeResultParser {
             isMix: true
           }
           return playlistItem;
+        }
+        return null;
+      }
+      case 'ShortsLockupView': {// Shorts (replaces ReelItem?)
+        const slvData = data as YTNodes.ShortsLockupView;
+        const slvDataTitle = this.unwrap(slvData.overlay_metadata.primary_text);
+        const slvDataEndpoint = this.parseEndpoint(slvData.on_tap_endpoint, EndpointType.Watch);
+        const slvVideoId = slvDataEndpoint?.payload.videoId;
+        if (slvDataTitle && slvDataEndpoint && slvVideoId) {
+          const slvResult: ContentItem.Video = {
+            type: 'video',
+            videoId: slvVideoId,
+            title: slvDataTitle,
+            thumbnail: this.parseThumbnail(slvData.thumbnail) || undefined,
+            viewCount: this.unwrap(slvData.overlay_metadata.secondary_text) || undefined,
+            endpoint: slvDataEndpoint
+          };
+          return slvResult;
         }
         return null;
       }
