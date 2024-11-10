@@ -6,6 +6,9 @@ Credit goes to the [YouTube.js](https://github.com/LuanRT/YouTube.js) project. T
 
 ### Changelog
 
+2.0.1
+- Fix some missing elements in browse results
+
 2.0.0
 - Release for Bookworm-based Volumio
 - Fix 403 playback error by using PO tokens (experimental)
