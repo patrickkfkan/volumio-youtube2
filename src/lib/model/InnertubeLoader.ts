@@ -1,18 +1,16 @@
 import yt2 from '../YouTube2Context';
-import Innertube, { Endpoints, YTNodes } from 'volumio-youtubei.js';
-import Auth, { AuthEvent } from '../util/Auth';
+import Innertube, { YTNodes } from 'volumio-youtubei.js';
 import BG, { type BgConfig } from 'bgutils-js';
 import { JSDOM } from 'jsdom';
+import { getAccountInitialInfo } from './AccountModelHelper';
 
 export interface InnertubeLoaderGetInstanceResult {
   innertube: Innertube;
-  auth: Auth;
 }
 
 enum Stage {
   Init = '1 - Init',
-  PO = '2 - PO',
-  Done = '3 - Done'
+  PO = '2 - PO'
 }
 
 interface POToken {
@@ -31,15 +29,13 @@ interface POToken {
 export default class InnertubeLoader {
 
   static #innertube: Innertube | null = null;
-  static #auth: Auth | null = null;
   static #pendingPromise: Promise<InnertubeLoaderGetInstanceResult> | null = null;
   static #poTokenRefreshTimer: NodeJS.Timeout | null = null;
 
   static async getInstance(): Promise<InnertubeLoaderGetInstanceResult> {
-    if (this.#innertube && this.#auth) {
+    if (this.#innertube) {
       return {
         innertube: this.#innertube,
-        auth: this.#auth
       };
     }
 
@@ -47,58 +43,61 @@ export default class InnertubeLoader {
       return this.#pendingPromise;
     }
 
-    this.#pendingPromise = this.#beginInitStage();
+    this.#pendingPromise = new Promise<InnertubeLoaderGetInstanceResult>((resolve, reject) => {
+      this.#createInstance(Stage.Init, resolve)
+        .catch((error: unknown) => {
+          reject(error instanceof Error ? error : Error(String(error)))
+        });
+    });
 
     return this.#pendingPromise;
   }
 
-  static #beginInitStage() {
-    return new Promise<InnertubeLoaderGetInstanceResult>((resolve) => {
-      this.#createInstance(Stage.Init, resolve)
-        .catch((error: unknown) => {
-          yt2.getLogger().error(yt2.getErrorMessage(`[youtube2] InnertubeLoader: error creating Innertube instance:`, error));
-        });
-    });
-  }
-
-  static async #beginPOStage(innertube: Innertube, auth: Auth, resolve: (value: InnertubeLoaderGetInstanceResult) => void, lastToken?: POToken) {
-    let identifier: POToken['params']['identifier'] | null = null;
+  static async #recreateWithPOToken(innertube: Innertube, resolve: (value: InnertubeLoaderGetInstanceResult) => void, lastToken?: POToken) {
     const visitorData = lastToken?.params.visitorData || innertube.session.context.client.visitorData;
+    let identifier: POToken['params']['identifier'] | null = visitorData ? {
+      type: 'visitorData',
+      value: visitorData
+    } : null;
+
     const lastIdentifier = lastToken?.params.identifier;
     if (lastIdentifier) {
       identifier = lastIdentifier;
     }
-    else if (innertube.session.logged_in) {
-      yt2.getLogger().info('[youtube2] InnertubeLoader: fetching datasyncIdToken...');
-      const user = await innertube.account.getInfo();
-      const accountItemSections = user.page.contents_memo?.getType(YTNodes.AccountItemSection);
-      if (accountItemSections) {
-        const accountItemSection = accountItemSections.first();
-        const accountItem = accountItemSection.contents.first();
-        const tokens = accountItem.endpoint.payload.supportedTokens;
-        let datasyncIdToken: string | null = null;
-        if (Array.isArray(tokens)) {
-          datasyncIdToken = tokens.find((v) =>
-            typeof v === 'object' &&
-            Reflect.has(v, 'datasyncIdToken') &&
-            typeof v.datasyncIdToken === 'object' &&
-            Reflect.has(v.datasyncIdToken, 'datasyncIdToken') &&
-            typeof v.datasyncIdToken.datasyncIdToken === 'string')?.datasyncIdToken.datasyncIdToken;
-        }
-        identifier = datasyncIdToken ? {
-          type: 'datasyncIdToken',
-          value: datasyncIdToken
-        } : null;
-      }
-      if (!identifier) {
-        yt2.getLogger().warn('[youtube2] InnertubeLoader: signed in but could not get datasyncIdToken for fetching po_token');
-      }
-    }
     else {
-      identifier = visitorData ? {
-        type: 'visitorData',
-        value: visitorData
-      } : null;
+      const account = await getAccountInitialInfo(innertube);
+      if (account.isSignedIn) {
+        yt2.getLogger().info('[youtube2] InnertubeLoader: fetching datasyncIdToken...');
+        let accountItemSections;
+        try {
+          const user = await innertube.account.getInfo();
+          accountItemSections = user.page.contents_memo?.getType(YTNodes.AccountItemSection);
+        }
+        catch (error: unknown) {
+          yt2.getLogger().error(yt2.getErrorMessage('[youtube2] InnertubeLoader: signed in but could not get account info', error, false));
+        }
+        if (accountItemSections) {
+          const accountItemSection = accountItemSections.first();
+          const accountItem = accountItemSection.contents.first();
+          const tokens = accountItem.endpoint.payload.supportedTokens;
+          let datasyncIdToken: string | null = null;
+          if (Array.isArray(tokens)) {
+            datasyncIdToken = tokens.find((v) =>
+              typeof v === 'object' &&
+              Reflect.has(v, 'datasyncIdToken') &&
+              typeof v.datasyncIdToken === 'object' &&
+              Reflect.has(v.datasyncIdToken, 'datasyncIdToken') &&
+              typeof v.datasyncIdToken.datasyncIdToken === 'string')?.datasyncIdToken.datasyncIdToken;
+          }
+          identifier = datasyncIdToken ? {
+            type: 'datasyncIdToken',
+            value: datasyncIdToken
+          } : null;
+        }
+        else {
+          yt2.getLogger().warn('[youtube2] InnertubeLoader: signed in but could not get datasyncIdToken for fetching po_token - will use visitorData instead');
+        }
+      }
     }
     let poTokenResult;
     if (identifier) {
@@ -112,7 +111,6 @@ export default class InnertubeLoader {
       }
       if (poTokenResult) {
         yt2.getLogger().info(`[youtube2] InnertubeLoader: re-create Innertube instance with po_token`);
-        auth.dispose();
         this.#createInstance(Stage.PO, resolve, {
           params: {
             visitorData,
@@ -129,21 +127,26 @@ export default class InnertubeLoader {
       }
     }
     yt2.getLogger().warn('[youtube2] InnertubeLoader: po_token was not used to create Innertube instance. Playback of YouTube content might fail.');
-    this.#resolveGetInstanceResult(innertube, auth, resolve);
+    this.#resolveGetInstanceResult(innertube, resolve);
   }
 
-  static async #createInstance(stage: Stage, resolve: (value: InnertubeLoaderGetInstanceResult) => void, poToken?: POToken) {
+  static async #createInstance(stage: Stage.PO, resolve: (value: InnertubeLoaderGetInstanceResult) => void, poToken: POToken): Promise<void>;
+  static async #createInstance(stage: Stage.Init, resolve: (value: InnertubeLoaderGetInstanceResult) => void, poToken?: undefined): Promise<void>;
+  static async #createInstance(stage: Stage.Init | Stage.PO, resolve: (value: InnertubeLoaderGetInstanceResult) => void, poToken?: POToken) {
     yt2.getLogger().info(`[youtube2] InnertubeLoader: creating Innertube instance${poToken?.value ? ' with po_token' : ''}...`);
     const innertube = await Innertube.create({
+      cookie: yt2.getConfigValue('cookie') || undefined,
       visitor_data: poToken?.params.visitorData,
       po_token: poToken?.value
     });
-    yt2.getLogger().info(`[youtube2] InnertubeLoader: creating Auth instance...`);
-    const auth = Auth.create(innertube);
-    auth.on(AuthEvent.SignIn, this.#handleAuthEvent.bind(this, AuthEvent.SignIn, stage, innertube, auth, resolve, poToken));
-    auth.on(AuthEvent.Pending, this.#handleAuthEvent.bind(this, AuthEvent.Pending, stage, innertube, auth, resolve, poToken));
-    auth.on(AuthEvent.Error, this.#handleAuthEvent.bind(this, AuthEvent.Error, stage, innertube, auth, resolve, poToken));
-    auth.signIn();
+    switch (stage) {
+      case Stage.Init:
+        await this.#recreateWithPOToken(innertube, resolve);
+        break;
+      case Stage.PO:
+        this.#resolveGetInstanceResult(innertube, resolve, poToken);
+        break;
+    }
   }
 
   static reset() {
@@ -151,10 +154,6 @@ export default class InnertubeLoader {
     if (this.#pendingPromise) {
       this.#pendingPromise = null;
     }
-    if (this.#auth) {
-      this.#auth.dispose();
-    }
-    this.#auth = null;
     this.#innertube = null;
   }
 
@@ -166,39 +165,13 @@ export default class InnertubeLoader {
   }
 
   static hasInstance() {
-    return this.#innertube && this.#auth;
+    return !!this.#innertube;
   }
 
-  static #handleAuthEvent(event: AuthEvent, stage: Stage, innertube: Innertube, auth: Auth, resolve: (value: InnertubeLoaderGetInstanceResult) => void, poToken?: POToken) {
-    switch (stage) {
-      case Stage.Init:
-        if (event === AuthEvent.SignIn || event === AuthEvent.Pending) {
-          this.#beginPOStage(innertube, auth, resolve)
-            .catch((error: unknown) => {
-              yt2.getLogger().error(yt2.getErrorMessage(`[youtube2] InnertubeLoader: error creating Innertube instance (with po_token):`, error));
-            });
-          return;
-        }
-        yt2.getLogger().warn('[youtube2] InnertubeLoader: po_token was not used to create Innertube instance because of auth error or unknown auth status. Playback of YouTube content might fail.');
-        this.#resolveGetInstanceResult(innertube, auth, resolve);
-        return;
-      case Stage.PO:
-        this.#resolveGetInstanceResult(innertube, auth, resolve, poToken);
-        break;
-    }
-  }
-
-  static #resolveGetInstanceResult(innertube: Innertube, auth: Auth, resolve: (value: InnertubeLoaderGetInstanceResult) => void, poToken?: POToken) {
+  static #resolveGetInstanceResult(innertube: Innertube, resolve: (value: InnertubeLoaderGetInstanceResult) => void, poToken?: POToken) {
     this.#pendingPromise = null;
     this.#innertube = innertube;
-    this.#auth = auth;
     this.applyI18nConfig();
-    if (innertube.session.logged_in) {
-      auth.on(AuthEvent.SignOut, this.#handleSignOut.bind(this));
-    }
-    else {
-      auth.on(AuthEvent.SignIn, this.#handleSubsequentSignIn.bind(this));
-    }
     this.#clearPOTokenRefreshTimer();
     if (poToken) {
       const { ttl, refreshThreshold = 100 } = poToken;
@@ -210,42 +183,18 @@ export default class InnertubeLoader {
     }
     resolve({
       innertube,
-      auth
     });
-  }
-
-  static #handleSubsequentSignIn() {
-    const innertube = this.#innertube;
-    const auth = this.#auth;
-    if (!innertube || !auth) {
-      return;
-    }
-    this.reset();
-    this.#pendingPromise = new Promise((resolve) => {
-      this.#handleAuthEvent(AuthEvent.SignIn, Stage.Init, innertube, auth, resolve);
-    });
-  }
-
-  static #handleSignOut() {
-    const innertube = this.#innertube;
-    const auth = this.#auth;
-    if (!innertube || !auth) {
-      return;
-    }
-    this.reset();
-    this.#pendingPromise = this.#beginInitStage();
   }
 
   static #refreshPOToken(lastToken: POToken) {
     const innertube = this.#innertube;
-    const auth = this.#auth;
-    if (!innertube || !auth) {
+    if (!innertube) {
       return;
     }
     this.reset();
     this.#pendingPromise = new Promise((resolve) => {
       yt2.getLogger().info('[youtube2] InnertubeLoader: refresh po_token');
-      this.#beginPOStage(innertube, auth, resolve, lastToken)
+      this.#recreateWithPOToken(innertube, resolve, lastToken)
         .catch((error: unknown) => {
           yt2.getLogger().error(yt2.getErrorMessage(`[youtube2] InnertubeLoader: error creating Innertube instance (while refreshing po_token):`, error));
         });

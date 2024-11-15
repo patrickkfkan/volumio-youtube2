@@ -24,7 +24,7 @@ exports.PLUGIN_CONFIG_SCHEMA = {
             feedVideos: true,
             playlistVideos: false
         }, json: true },
-    authCredentials: { defaultValue: undefined, json: true }
+    cookie: { defaultValue: '', json: false }
 };
 class ConfigModel extends BaseModel_1.BaseModel {
     async getI18nOptions() {

@@ -1,4 +1,3 @@
-import { type OAuth2Tokens } from 'volumio-youtubei.js';
 import type Endpoint from './Endpoint';
 
 export type PluginConfigKey = keyof PluginConfigSchema;
@@ -21,7 +20,7 @@ export interface PluginConfigSchema {
   liveStreamQuality: PluginConfigSchemaEntry<'auto' | '144p' | '240p' | '360p' | '480p' | '720p' | '1080p'>;
   prefetch: PluginConfigSchemaEntry<boolean>;
   ytPlaybackMode: PluginConfigSchemaEntry<YouTubePlaybackMode, true>;
-  authCredentials: PluginConfigSchemaEntry<OAuth2Tokens | undefined, true>;
+  cookie: PluginConfigSchemaEntry<string>;
 }
 
 export interface YouTubePlaybackMode {

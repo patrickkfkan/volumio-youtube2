@@ -21,7 +21,7 @@ export const PLUGIN_CONFIG_SCHEMA: PluginConfigSchema = {
     feedVideos: true,
     playlistVideos: false
   }, json: true},
-  authCredentials: { defaultValue: undefined, json: true }
+  cookie: { defaultValue: '', json: false }
 };
 
 export default class ConfigModel extends BaseModel {

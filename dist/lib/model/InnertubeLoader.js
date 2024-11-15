@@ -36,31 +36,34 @@ var __classPrivateFieldSet = (this && this.__classPrivateFieldSet) || function (
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-var _a, _InnertubeLoader_innertube, _InnertubeLoader_auth, _InnertubeLoader_pendingPromise, _InnertubeLoader_poTokenRefreshTimer, _InnertubeLoader_beginInitStage, _InnertubeLoader_beginPOStage, _InnertubeLoader_createInstance, _InnertubeLoader_clearPOTokenRefreshTimer, _InnertubeLoader_handleAuthEvent, _InnertubeLoader_resolveGetInstanceResult, _InnertubeLoader_handleSubsequentSignIn, _InnertubeLoader_handleSignOut, _InnertubeLoader_refreshPOToken, _InnertubeLoader_generatePoToken;
+var _a, _InnertubeLoader_innertube, _InnertubeLoader_pendingPromise, _InnertubeLoader_poTokenRefreshTimer, _InnertubeLoader_recreateWithPOToken, _InnertubeLoader_createInstance, _InnertubeLoader_clearPOTokenRefreshTimer, _InnertubeLoader_resolveGetInstanceResult, _InnertubeLoader_refreshPOToken, _InnertubeLoader_generatePoToken;
 Object.defineProperty(exports, "__esModule", { value: true });
 const YouTube2Context_1 = __importDefault(require("../YouTube2Context"));
 const volumio_youtubei_js_1 = __importStar(require("volumio-youtubei.js"));
-const Auth_1 = __importStar(require("../util/Auth"));
 const bgutils_js_1 = __importDefault(require("bgutils-js"));
 const jsdom_1 = require("jsdom");
+const AccountModelHelper_1 = require("./AccountModelHelper");
 var Stage;
 (function (Stage) {
     Stage["Init"] = "1 - Init";
     Stage["PO"] = "2 - PO";
-    Stage["Done"] = "3 - Done";
 })(Stage || (Stage = {}));
 class InnertubeLoader {
     static async getInstance() {
-        if (__classPrivateFieldGet(this, _a, "f", _InnertubeLoader_innertube) && __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_auth)) {
+        if (__classPrivateFieldGet(this, _a, "f", _InnertubeLoader_innertube)) {
             return {
                 innertube: __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_innertube),
-                auth: __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_auth)
             };
         }
         if (__classPrivateFieldGet(this, _a, "f", _InnertubeLoader_pendingPromise)) {
             return __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_pendingPromise);
         }
-        __classPrivateFieldSet(this, _a, __classPrivateFieldGet(this, _a, "m", _InnertubeLoader_beginInitStage).call(this), "f", _InnertubeLoader_pendingPromise);
+        __classPrivateFieldSet(this, _a, new Promise((resolve, reject) => {
+            __classPrivateFieldGet(this, _a, "m", _InnertubeLoader_createInstance).call(this, Stage.Init, resolve)
+                .catch((error) => {
+                reject(error instanceof Error ? error : Error(String(error)));
+            });
+        }), "f", _InnertubeLoader_pendingPromise);
         return __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_pendingPromise);
     }
     static reset() {
@@ -68,14 +71,10 @@ class InnertubeLoader {
         if (__classPrivateFieldGet(this, _a, "f", _InnertubeLoader_pendingPromise)) {
             __classPrivateFieldSet(this, _a, null, "f", _InnertubeLoader_pendingPromise);
         }
-        if (__classPrivateFieldGet(this, _a, "f", _InnertubeLoader_auth)) {
-            __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_auth).dispose();
-        }
-        __classPrivateFieldSet(this, _a, null, "f", _InnertubeLoader_auth);
         __classPrivateFieldSet(this, _a, null, "f", _InnertubeLoader_innertube);
     }
     static hasInstance() {
-        return __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_innertube) && __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_auth);
+        return !!__classPrivateFieldGet(this, _a, "f", _InnertubeLoader_innertube);
     }
     static applyI18nConfig() {
         if (!__classPrivateFieldGet(this, _a, "f", _InnertubeLoader_innertube)) {
@@ -87,50 +86,49 @@ class InnertubeLoader {
         __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_innertube).session.context.client.hl = language;
     }
 }
-_a = InnertubeLoader, _InnertubeLoader_beginInitStage = function _InnertubeLoader_beginInitStage() {
-    return new Promise((resolve) => {
-        __classPrivateFieldGet(this, _a, "m", _InnertubeLoader_createInstance).call(this, Stage.Init, resolve)
-            .catch((error) => {
-            YouTube2Context_1.default.getLogger().error(YouTube2Context_1.default.getErrorMessage(`[youtube2] InnertubeLoader: error creating Innertube instance:`, error));
-        });
-    });
-}, _InnertubeLoader_beginPOStage = async function _InnertubeLoader_beginPOStage(innertube, auth, resolve, lastToken) {
-    let identifier = null;
+_a = InnertubeLoader, _InnertubeLoader_recreateWithPOToken = async function _InnertubeLoader_recreateWithPOToken(innertube, resolve, lastToken) {
     const visitorData = lastToken?.params.visitorData || innertube.session.context.client.visitorData;
+    let identifier = visitorData ? {
+        type: 'visitorData',
+        value: visitorData
+    } : null;
     const lastIdentifier = lastToken?.params.identifier;
     if (lastIdentifier) {
         identifier = lastIdentifier;
     }
-    else if (innertube.session.logged_in) {
-        YouTube2Context_1.default.getLogger().info('[youtube2] InnertubeLoader: fetching datasyncIdToken...');
-        const user = await innertube.account.getInfo();
-        const accountItemSections = user.page.contents_memo?.getType(volumio_youtubei_js_1.YTNodes.AccountItemSection);
-        if (accountItemSections) {
-            const accountItemSection = accountItemSections.first();
-            const accountItem = accountItemSection.contents.first();
-            const tokens = accountItem.endpoint.payload.supportedTokens;
-            let datasyncIdToken = null;
-            if (Array.isArray(tokens)) {
-                datasyncIdToken = tokens.find((v) => typeof v === 'object' &&
-                    Reflect.has(v, 'datasyncIdToken') &&
-                    typeof v.datasyncIdToken === 'object' &&
-                    Reflect.has(v.datasyncIdToken, 'datasyncIdToken') &&
-                    typeof v.datasyncIdToken.datasyncIdToken === 'string')?.datasyncIdToken.datasyncIdToken;
-            }
-            identifier = datasyncIdToken ? {
-                type: 'datasyncIdToken',
-                value: datasyncIdToken
-            } : null;
-        }
-        if (!identifier) {
-            YouTube2Context_1.default.getLogger().warn('[youtube2] InnertubeLoader: signed in but could not get datasyncIdToken for fetching po_token');
-        }
-    }
     else {
-        identifier = visitorData ? {
-            type: 'visitorData',
-            value: visitorData
-        } : null;
+        const account = await (0, AccountModelHelper_1.getAccountInitialInfo)(innertube);
+        if (account.isSignedIn) {
+            YouTube2Context_1.default.getLogger().info('[youtube2] InnertubeLoader: fetching datasyncIdToken...');
+            let accountItemSections;
+            try {
+                const user = await innertube.account.getInfo();
+                accountItemSections = user.page.contents_memo?.getType(volumio_youtubei_js_1.YTNodes.AccountItemSection);
+            }
+            catch (error) {
+                YouTube2Context_1.default.getLogger().error(YouTube2Context_1.default.getErrorMessage('[youtube2] InnertubeLoader: signed in but could not get account info', error, false));
+            }
+            if (accountItemSections) {
+                const accountItemSection = accountItemSections.first();
+                const accountItem = accountItemSection.contents.first();
+                const tokens = accountItem.endpoint.payload.supportedTokens;
+                let datasyncIdToken = null;
+                if (Array.isArray(tokens)) {
+                    datasyncIdToken = tokens.find((v) => typeof v === 'object' &&
+                        Reflect.has(v, 'datasyncIdToken') &&
+                        typeof v.datasyncIdToken === 'object' &&
+                        Reflect.has(v.datasyncIdToken, 'datasyncIdToken') &&
+                        typeof v.datasyncIdToken.datasyncIdToken === 'string')?.datasyncIdToken.datasyncIdToken;
+                }
+                identifier = datasyncIdToken ? {
+                    type: 'datasyncIdToken',
+                    value: datasyncIdToken
+                } : null;
+            }
+            else {
+                YouTube2Context_1.default.getLogger().warn('[youtube2] InnertubeLoader: signed in but could not get datasyncIdToken for fetching po_token - will use visitorData instead');
+            }
+        }
     }
     let poTokenResult;
     if (identifier) {
@@ -144,7 +142,6 @@ _a = InnertubeLoader, _InnertubeLoader_beginInitStage = function _InnertubeLoade
         }
         if (poTokenResult) {
             YouTube2Context_1.default.getLogger().info(`[youtube2] InnertubeLoader: re-create Innertube instance with po_token`);
-            auth.dispose();
             __classPrivateFieldGet(this, _a, "m", _InnertubeLoader_createInstance).call(this, Stage.PO, resolve, {
                 params: {
                     visitorData,
@@ -161,52 +158,31 @@ _a = InnertubeLoader, _InnertubeLoader_beginInitStage = function _InnertubeLoade
         }
     }
     YouTube2Context_1.default.getLogger().warn('[youtube2] InnertubeLoader: po_token was not used to create Innertube instance. Playback of YouTube content might fail.');
-    __classPrivateFieldGet(this, _a, "m", _InnertubeLoader_resolveGetInstanceResult).call(this, innertube, auth, resolve);
+    __classPrivateFieldGet(this, _a, "m", _InnertubeLoader_resolveGetInstanceResult).call(this, innertube, resolve);
 }, _InnertubeLoader_createInstance = async function _InnertubeLoader_createInstance(stage, resolve, poToken) {
     YouTube2Context_1.default.getLogger().info(`[youtube2] InnertubeLoader: creating Innertube instance${poToken?.value ? ' with po_token' : ''}...`);
     const innertube = await volumio_youtubei_js_1.default.create({
+        cookie: YouTube2Context_1.default.getConfigValue('cookie') || undefined,
         visitor_data: poToken?.params.visitorData,
         po_token: poToken?.value
     });
-    YouTube2Context_1.default.getLogger().info(`[youtube2] InnertubeLoader: creating Auth instance...`);
-    const auth = Auth_1.default.create(innertube);
-    auth.on(Auth_1.AuthEvent.SignIn, __classPrivateFieldGet(this, _a, "m", _InnertubeLoader_handleAuthEvent).bind(this, Auth_1.AuthEvent.SignIn, stage, innertube, auth, resolve, poToken));
-    auth.on(Auth_1.AuthEvent.Pending, __classPrivateFieldGet(this, _a, "m", _InnertubeLoader_handleAuthEvent).bind(this, Auth_1.AuthEvent.Pending, stage, innertube, auth, resolve, poToken));
-    auth.on(Auth_1.AuthEvent.Error, __classPrivateFieldGet(this, _a, "m", _InnertubeLoader_handleAuthEvent).bind(this, Auth_1.AuthEvent.Error, stage, innertube, auth, resolve, poToken));
-    auth.signIn();
+    switch (stage) {
+        case Stage.Init:
+            await __classPrivateFieldGet(this, _a, "m", _InnertubeLoader_recreateWithPOToken).call(this, innertube, resolve);
+            break;
+        case Stage.PO:
+            __classPrivateFieldGet(this, _a, "m", _InnertubeLoader_resolveGetInstanceResult).call(this, innertube, resolve, poToken);
+            break;
+    }
 }, _InnertubeLoader_clearPOTokenRefreshTimer = function _InnertubeLoader_clearPOTokenRefreshTimer() {
     if (__classPrivateFieldGet(this, _a, "f", _InnertubeLoader_poTokenRefreshTimer)) {
         clearTimeout(__classPrivateFieldGet(this, _a, "f", _InnertubeLoader_poTokenRefreshTimer));
         __classPrivateFieldSet(this, _a, null, "f", _InnertubeLoader_poTokenRefreshTimer);
     }
-}, _InnertubeLoader_handleAuthEvent = function _InnertubeLoader_handleAuthEvent(event, stage, innertube, auth, resolve, poToken) {
-    switch (stage) {
-        case Stage.Init:
-            if (event === Auth_1.AuthEvent.SignIn || event === Auth_1.AuthEvent.Pending) {
-                __classPrivateFieldGet(this, _a, "m", _InnertubeLoader_beginPOStage).call(this, innertube, auth, resolve)
-                    .catch((error) => {
-                    YouTube2Context_1.default.getLogger().error(YouTube2Context_1.default.getErrorMessage(`[youtube2] InnertubeLoader: error creating Innertube instance (with po_token):`, error));
-                });
-                return;
-            }
-            YouTube2Context_1.default.getLogger().warn('[youtube2] InnertubeLoader: po_token was not used to create Innertube instance because of auth error or unknown auth status. Playback of YouTube content might fail.');
-            __classPrivateFieldGet(this, _a, "m", _InnertubeLoader_resolveGetInstanceResult).call(this, innertube, auth, resolve);
-            return;
-        case Stage.PO:
-            __classPrivateFieldGet(this, _a, "m", _InnertubeLoader_resolveGetInstanceResult).call(this, innertube, auth, resolve, poToken);
-            break;
-    }
-}, _InnertubeLoader_resolveGetInstanceResult = function _InnertubeLoader_resolveGetInstanceResult(innertube, auth, resolve, poToken) {
+}, _InnertubeLoader_resolveGetInstanceResult = function _InnertubeLoader_resolveGetInstanceResult(innertube, resolve, poToken) {
     __classPrivateFieldSet(this, _a, null, "f", _InnertubeLoader_pendingPromise);
     __classPrivateFieldSet(this, _a, innertube, "f", _InnertubeLoader_innertube);
-    __classPrivateFieldSet(this, _a, auth, "f", _InnertubeLoader_auth);
     this.applyI18nConfig();
-    if (innertube.session.logged_in) {
-        auth.on(Auth_1.AuthEvent.SignOut, __classPrivateFieldGet(this, _a, "m", _InnertubeLoader_handleSignOut).bind(this));
-    }
-    else {
-        auth.on(Auth_1.AuthEvent.SignIn, __classPrivateFieldGet(this, _a, "m", _InnertubeLoader_handleSubsequentSignIn).bind(this));
-    }
     __classPrivateFieldGet(this, _a, "m", _InnertubeLoader_clearPOTokenRefreshTimer).call(this);
     if (poToken) {
         const { ttl, refreshThreshold = 100 } = poToken;
@@ -218,36 +194,16 @@ _a = InnertubeLoader, _InnertubeLoader_beginInitStage = function _InnertubeLoade
     }
     resolve({
         innertube,
-        auth
     });
-}, _InnertubeLoader_handleSubsequentSignIn = function _InnertubeLoader_handleSubsequentSignIn() {
-    const innertube = __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_innertube);
-    const auth = __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_auth);
-    if (!innertube || !auth) {
-        return;
-    }
-    this.reset();
-    __classPrivateFieldSet(this, _a, new Promise((resolve) => {
-        __classPrivateFieldGet(this, _a, "m", _InnertubeLoader_handleAuthEvent).call(this, Auth_1.AuthEvent.SignIn, Stage.Init, innertube, auth, resolve);
-    }), "f", _InnertubeLoader_pendingPromise);
-}, _InnertubeLoader_handleSignOut = function _InnertubeLoader_handleSignOut() {
-    const innertube = __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_innertube);
-    const auth = __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_auth);
-    if (!innertube || !auth) {
-        return;
-    }
-    this.reset();
-    __classPrivateFieldSet(this, _a, __classPrivateFieldGet(this, _a, "m", _InnertubeLoader_beginInitStage).call(this), "f", _InnertubeLoader_pendingPromise);
 }, _InnertubeLoader_refreshPOToken = function _InnertubeLoader_refreshPOToken(lastToken) {
     const innertube = __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_innertube);
-    const auth = __classPrivateFieldGet(this, _a, "f", _InnertubeLoader_auth);
-    if (!innertube || !auth) {
+    if (!innertube) {
         return;
     }
     this.reset();
     __classPrivateFieldSet(this, _a, new Promise((resolve) => {
         YouTube2Context_1.default.getLogger().info('[youtube2] InnertubeLoader: refresh po_token');
-        __classPrivateFieldGet(this, _a, "m", _InnertubeLoader_beginPOStage).call(this, innertube, auth, resolve, lastToken)
+        __classPrivateFieldGet(this, _a, "m", _InnertubeLoader_recreateWithPOToken).call(this, innertube, resolve, lastToken)
             .catch((error) => {
             YouTube2Context_1.default.getLogger().error(YouTube2Context_1.default.getErrorMessage(`[youtube2] InnertubeLoader: error creating Innertube instance (while refreshing po_token):`, error));
         });
@@ -288,7 +244,6 @@ _a = InnertubeLoader, _InnertubeLoader_beginInitStage = function _InnertubeLoade
     };
 };
 _InnertubeLoader_innertube = { value: null };
-_InnertubeLoader_auth = { value: null };
 _InnertubeLoader_pendingPromise = { value: null };
 _InnertubeLoader_poTokenRefreshTimer = { value: null };
 exports.default = InnertubeLoader;

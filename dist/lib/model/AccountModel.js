@@ -11,30 +11,34 @@ var _AccountModel_instances, _AccountModel_getChannelInfo;
 Object.defineProperty(exports, "__esModule", { value: true });
 const volumio_youtubei_js_1 = require("volumio-youtubei.js");
 const Endpoint_1 = require("../types/Endpoint");
-const Auth_1 = require("../util/Auth");
 const BaseModel_1 = require("./BaseModel");
 const InnertubeResultParser_1 = __importDefault(require("./InnertubeResultParser"));
 const util_1 = require("../util");
 const YouTube2Context_1 = __importDefault(require("../YouTube2Context"));
+const AccountModelHelper_1 = require("./AccountModelHelper");
 class AccountModel extends BaseModel_1.BaseModel {
     constructor() {
         super(...arguments);
         _AccountModel_instances.add(this);
     }
     async getInfo() {
-        const { innertube, auth } = await this.getInnertube();
-        if (auth.getStatus().status !== Auth_1.AuthStatus.SignedIn) {
-            return null;
+        const { innertube } = await this.getInnertube();
+        const { isSignedIn, response } = await (0, AccountModelHelper_1.getAccountInitialInfo)(innertube);
+        if (!isSignedIn) {
+            return {
+                isSignedIn: false,
+                info: null
+            };
         }
-        const info = await innertube.account.getInfo();
+        const info = new volumio_youtubei_js_1.YT.AccountInfo(response);
         // This plugin supports single sign-in, so there should only be one account in contents.
         // But we still get the 'selected' one just to be sure.
         const account = info.contents?.contents.find((ac) => ac.is(volumio_youtubei_js_1.YTNodes.AccountItem) && ac.is_selected);
         if (account?.is(volumio_youtubei_js_1.YTNodes.AccountItem)) {
-            const accountName = InnertubeResultParser_1.default.unwrap(account.account_name);
-            if (accountName) {
+            const name = InnertubeResultParser_1.default.unwrap(account?.account_name);
+            if (name) {
                 const result = {
-                    name: accountName,
+                    name,
                     photo: InnertubeResultParser_1.default.parseThumbnail(account.account_photo)
                 };
                 try {
@@ -46,10 +50,13 @@ class AccountModel extends BaseModel_1.BaseModel {
                 catch (error) {
                     YouTube2Context_1.default.getLogger().error(YouTube2Context_1.default.getErrorMessage('[youtube2] AccountModel.#getChannelInfo() error:', error));
                 }
-                return result;
+                return {
+                    isSignedIn: true,
+                    info: result
+                };
             }
         }
-        return null;
+        throw Error('Signed in but unable to get account info');
     }
 }
 _AccountModel_instances = new WeakSet(), _AccountModel_getChannelInfo = async function _AccountModel_getChannelInfo() {

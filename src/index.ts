@@ -9,8 +9,7 @@ import yt2 from './lib/YouTube2Context';
 import BrowseController from './lib/controller/browse';
 import SearchController, { type SearchQuery } from './lib/controller/search/SearchController';
 import PlayController from './lib/controller/play/PlayController';
-import { jsPromiseToKew } from './lib/util';
-import { AuthStatus } from './lib/util/Auth';
+import { jsPromiseToKew, kewToJSPromise } from './lib/util';
 import Model, { ModelType } from './lib/model';
 import { type Account, type I18nOptionValue, type I18nOptions } from './lib/types/PluginConfig';
 import { type QueueItem } from './lib/controller/browse/view-handlers/ExplodableViewHandler';
@@ -44,17 +43,16 @@ class ControllerYouTube2 implements NowPlayingPluginSupport {
 
     const langCode = this.#commandRouter.sharedVars.get('language_code');
     const loadConfigPromises = [
-      this.#commandRouter.i18nJson(`${__dirname}/i18n/strings_${langCode}.json`,
+      kewToJSPromise(this.#commandRouter.i18nJson(`${__dirname}/i18n/strings_${langCode}.json`,
         `${__dirname}/i18n/strings_en.json`,
-        `${__dirname}/UIConfig.json`),
+        `${__dirname}/UIConfig.json`)),
       this.#getConfigI18nOptions(),
-      this.#getConfigAccountInfo(),
-      this.#getAuthStatus()
-    ];
+      this.#getConfigAccountInfo()
+    ] as const;
 
     const configModel = Model.getInstance(ModelType.Config);
 
-    libQ.all(loadConfigPromises)
+    Promise.all(loadConfigPromises)
       .then(([ uiconf, i18nOptions, account, authStatus ]: any) => {
         const i18nUIConf = uiconf.sections[0];
         const accountUIConf = uiconf.sections[1];
@@ -72,80 +70,21 @@ class ControllerYouTube2 implements NowPlayingPluginSupport {
         i18nUIConf.content[1].value = i18nOptions.selected.language;
 
         // Account
+        const cookie = yt2.getConfigValue('cookie');
         let authStatusDescription;
-        switch (authStatus.status) {
-          case AuthStatus.SignedIn:
-            if (account) {
-              authStatusDescription = yt2.getI18n('YOUTUBE2_AUTH_STATUS_SIGNED_IN_AS', (account as Account).name);
-            }
-            else {
-              authStatusDescription = yt2.getI18n('YOUTUBE2_AUTH_STATUS_SIGNED_IN');
-            }
-            break;
-          case AuthStatus.SigningIn:
-            authStatusDescription = yt2.getI18n('YOUTUBE2_AUTH_STATUS_SIGNING_IN');
-            break;
-          case AuthStatus.Error:
-            authStatusDescription = yt2.getI18n('YOUTUBE2_AUTH_STATUS_ERROR',
-              yt2.getErrorMessage('', authStatus.error, false));
-            break;
-          default: // AuthStatus.SignedOut
-            authStatusDescription = yt2.getI18n('YOUTUBE2_AUTH_STATUS_SIGNED_OUT');
-        }
-
-        if (authStatus.status === AuthStatus.SignedOut) {
-          if (authStatus.verificationInfo) {
-            authStatusDescription += ` ${yt2.getI18n('YOUTUBE2_AUTH_STATUS_CODE_READY')}`;
-
-            accountUIConf.content = [
-              {
-                id: 'verificationUrl',
-                type: 'text',
-                element: 'input',
-                label: yt2.getI18n('YOUTUBE2_VERIFICATION_URL'),
-                value: authStatus.verificationInfo.verificationUrl
-              },
-              {
-                id: 'openVerificationUrl',
-                element: 'button',
-                label: yt2.getI18n('YOUTUBE2_GO_TO_VERIFICATION_URL'),
-                onClick: {
-                  type: 'openUrl',
-                  url: authStatus.verificationInfo.verificationUrl
-                }
-              },
-              {
-                id: 'code',
-                type: 'text',
-                element: 'input',
-                label: yt2.getI18n('YOUTUBE2_DEVICE_CODE'),
-                value: authStatus.verificationInfo.userCode
-              }
-            ];
+        if (account?.isSignedIn && account.info) {
+          if (account.info.name) {
+            authStatusDescription = yt2.getI18n('YOUTUBE2_AUTH_STATUS_SIGNED_IN_AS', account.info.name);
           }
           else {
-            authStatusDescription += ` ${yt2.getI18n('YOUTUBE2_AUTH_STATUS_CODE_PENDING')}`;
+            authStatusDescription = yt2.getI18n('YOUTUBE2_AUTH_STATUS_SIGNED_IN');
           }
         }
-        else if (authStatus.status === AuthStatus.SignedIn) {
-          accountUIConf.content = [
-            {
-              id: 'signOut',
-              element: 'button',
-              label: yt2.getI18n('YOUTUBE2_SIGN_OUT'),
-              onClick: {
-                type: 'emit',
-                message: 'callMethod',
-                data: {
-                  endpoint: 'music_service/youtube2',
-                  method: 'configSignOut'
-                }
-              }
-            }
-          ];
+        else if (cookie) {
+          authStatusDescription = yt2.getI18n('YOUTUBE2_AUTH_STATUS_SIGNED_OUT');
         }
-
         accountUIConf.description = authStatusDescription;
+        accountUIConf.content[0].value = cookie;
 
         // Browse
         const rootContentType = yt2.getConfigValue('rootContentType');
@@ -178,8 +117,8 @@ class ControllerYouTube2 implements NowPlayingPluginSupport {
 
         defer.resolve(uiconf);
       })
-      .fail((error: any) => {
-        yt2.getLogger().error(`[youtube2] getUIConfig(): Cannot populate YouTube2 configuration - ${error}`);
+      .catch((error: unknown) => {
+        yt2.getLogger().error(yt2.getErrorMessage(`[youtube2] getUIConfig(): Cannot populate YouTube2 configuration:`, error));
         defer.reject(Error());
       }
       );
@@ -229,67 +168,47 @@ class ControllerYouTube2 implements NowPlayingPluginSupport {
     return [ 'config.json' ];
   }
 
-  #getConfigI18nOptions() {
-    const defer = libQ.defer();
-
+  async #getConfigI18nOptions() {
     const model = Model.getInstance(ModelType.Config);
     const selected: Record<keyof I18nOptions, I18nOptionValue> = {
       region: { label: '', value: '' },
       language: { label: '', value: '' }
     };
-    model.getI18nOptions().then((options) => {
+    try {
+      const options = await model.getI18nOptions();
       const selectedValues = {
         region: yt2.getConfigValue('region'),
         language: yt2.getConfigValue('language')
       };
+
       (Object.keys(selected) as (keyof I18nOptions)[]).forEach((key) => {
         selected[key] = options[key]?.optionValues.find((ov) => ov.value === selectedValues[key]) || { label: '', value: selectedValues[key] };
       });
 
-      defer.resolve({
+      return {
         options,
         selected
-      });
-    })
-    .catch((error: unknown) => {
+      };
+    }
+    catch (error: unknown) {
       yt2.getLogger().error(yt2.getErrorMessage('[youtube2] Error getting i18n options:', error));
       yt2.toast('warning', 'Could not obtain i18n options');
-      defer.resolve({
+      return {
         options: model.getDefaultI18nOptions(),
         selected
-      })
-    });
-
-    return defer.promise;
+      };
+    }
   }
 
   #getConfigAccountInfo() {
-    const defer = libQ.defer();
-
     const model = Model.getInstance(ModelType.Account);
-    model.getInfo().then((account) => {
-      defer.resolve(account);
-    })
-      .catch((error: unknown) => {
-        yt2.getLogger().warn(yt2.getErrorMessage('[youtube2] Failed to get account config:', error));
-        defer.resolve(null);
-      });
-
-    return defer.promise;
-  }
-
-  #getAuthStatus() {
-    const defer = libQ.defer();
-
-    InnertubeLoader.getInstance().then(({ auth }) => {
-      defer.resolve(auth.getStatus());
-    })
-      .catch((error: unknown) => {
-        yt2.getLogger().warn(yt2.getErrorMessage('[youtube2] Failed to get auth status:', error));
-        defer.resolve(null);
-      });
-
-    return defer.promise;
+    try {
+      return model.getInfo();
+    }
+    catch (error: unknown) {
+      yt2.getLogger().warn(yt2.getErrorMessage('[youtube2] Failed to get account config:', error));
+      return null;
+    }
   }
 
   configSaveI18n(data: any) {
@@ -310,11 +229,15 @@ class ControllerYouTube2 implements NowPlayingPluginSupport {
     yt2.toast('success', yt2.getI18n('YOUTUBE2_SETTINGS_SAVED'));
   }
 
-  async configSignOut() {
-    if (InnertubeLoader.hasInstance()) {
-      const { auth } = await InnertubeLoader.getInstance();
-      void auth.signOut();
+  configSaveAccount(data: any) {
+    const oldCookie = yt2.hasConfigKey('cookie') ? yt2.getConfigValue('cookie') : null;
+    const cookie = data.cookie?.trim();
+    if (oldCookie !== cookie) {
+      yt2.setConfigValue('cookie', cookie);
+      InnertubeLoader.reset();
+      yt2.refreshUIConfig();
     }
+    yt2.toast('success', yt2.getI18n('YOUTUBE2_SETTINGS_SAVED'));
   }
 
   configSaveBrowse(data: any) {
