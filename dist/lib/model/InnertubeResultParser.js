@@ -797,6 +797,26 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
                     endpoint: lvDataEndpoint,
                     isMix: true
                 };
+                const lvBrowseEndpoint = (() => {
+                    if (lvData.metadata?.metadata) {
+                        for (const row of lvData.metadata.metadata.metadata_rows) {
+                            if (row.metadata_parts) {
+                                for (const part of row.metadata_parts) {
+                                    if (part.text.endpoint && part.text.endpoint.metadata?.page_type === 'WEB_PAGE_TYPE_PLAYLIST') {
+                                        const tryParse = this.parseEndpoint(part.text.endpoint, Endpoint_1.EndpointType.Browse);
+                                        if (tryParse) {
+                                            return tryParse;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    return null;
+                })();
+                if (lvBrowseEndpoint) {
+                    playlistItem.browseEndpoint = lvBrowseEndpoint;
+                }
                 return playlistItem;
             }
             return null;
