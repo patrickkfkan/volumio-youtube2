@@ -6,6 +6,10 @@ Credit goes to the [YouTube.js](https://github.com/LuanRT/YouTube.js) project. T
 
 ### Changelog
 
+2.2.0
+- Add 'Active Profile' setting for accounts with multiple channels
+- Fix playlists not browseable
+
 2.1.0
 - Replace OAuth login with cookie
 
