@@ -19,6 +19,7 @@ interface POToken {
     identifier: {
       type: 'visitorData' | 'datasyncIdToken';
       value: string;
+      pageId?: string;
     };
   }
   value: string;
@@ -67,32 +68,26 @@ export default class InnertubeLoader {
     else {
       const account = await getAccountInitialInfo(innertube);
       if (account.isSignedIn) {
-        yt2.getLogger().info('[youtube2] InnertubeLoader: fetching datasyncIdToken...');
-        let accountItemSections;
-        try {
-          const user = await innertube.account.getInfo();
-          accountItemSections = user.page.contents_memo?.getType(YTNodes.AccountItemSection);
-        }
-        catch (error: unknown) {
-          yt2.getLogger().error(yt2.getErrorMessage('[youtube2] InnertubeLoader: signed in but could not get account info', error, false));
-        }
-        if (accountItemSections) {
-          const accountItemSection = accountItemSections.first();
-          const accountItem = accountItemSection.contents.first();
-          const tokens = accountItem.endpoint.payload.supportedTokens;
-          let datasyncIdToken: string | null = null;
-          if (Array.isArray(tokens)) {
-            datasyncIdToken = tokens.find((v) =>
-              typeof v === 'object' &&
-              Reflect.has(v, 'datasyncIdToken') &&
-              typeof v.datasyncIdToken === 'object' &&
-              Reflect.has(v.datasyncIdToken, 'datasyncIdToken') &&
-              typeof v.datasyncIdToken.datasyncIdToken === 'string')?.datasyncIdToken.datasyncIdToken;
+        const activeChannelHandle = yt2.getConfigValue('activeChannelHandle');
+        let target;
+        if (activeChannelHandle && account.list.length > 1) {
+          target = account.list.find((ac) => ac.handle === activeChannelHandle);
+          if (!target) {
+            yt2.toast('warning', yt2.getI18n('YOUTUBE2_ERR_UNKNOWN_CHANNEL_HANDLE', activeChannelHandle));
+            target = account.active;
           }
-          identifier = datasyncIdToken ? {
+        }
+        else {
+          target = account.active;
+        }
+        const pageId = target?.pageId || undefined;
+        const datasyncIdToken = target?.datasyncIdToken || undefined;
+        if (datasyncIdToken) {
+          identifier = {
             type: 'datasyncIdToken',
-            value: datasyncIdToken
-          } : null;
+            value: datasyncIdToken,
+            pageId
+          };
         }
         else {
           yt2.getLogger().warn('[youtube2] InnertubeLoader: signed in but could not get datasyncIdToken for fetching po_token - will use visitorData instead');
@@ -114,7 +109,7 @@ export default class InnertubeLoader {
         this.#createInstance(Stage.PO, resolve, {
           params: {
             visitorData,
-            identifier
+            identifier,
           },
           value: poTokenResult.token,
           ttl: poTokenResult.ttl,
@@ -133,10 +128,19 @@ export default class InnertubeLoader {
   static async #createInstance(stage: Stage.PO, resolve: (value: InnertubeLoaderGetInstanceResult) => void, poToken: POToken): Promise<void>;
   static async #createInstance(stage: Stage.Init, resolve: (value: InnertubeLoaderGetInstanceResult) => void, poToken?: undefined): Promise<void>;
   static async #createInstance(stage: Stage.Init | Stage.PO, resolve: (value: InnertubeLoaderGetInstanceResult) => void, poToken?: POToken) {
-    yt2.getLogger().info(`[youtube2] InnertubeLoader: creating Innertube instance${poToken?.value ? ' with po_token' : ''}...`);
+    const usedParams: string[] = [];
+    if (poToken?.value) {
+      usedParams.push('po_token');
+    }
+    if (poToken?.params.identifier.pageId) {
+      usedParams.push('page_id');
+    }
+    const usedParamsStr = usedParams.length > 0 ? ` with ${usedParams.join(' + ')}` : '';
+    yt2.getLogger().info(`[youtube2] InnertubeLoader: creating Innertube instance${usedParamsStr}...`);
     const innertube = await Innertube.create({
       cookie: yt2.getConfigValue('cookie') || undefined,
       visitor_data: poToken?.params.visitorData,
+      on_behalf_of_user: poToken?.params.identifier.pageId,
       po_token: poToken?.value
     });
     switch (stage) {

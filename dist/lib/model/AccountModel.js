@@ -14,7 +14,6 @@ const Endpoint_1 = require("../types/Endpoint");
 const BaseModel_1 = require("./BaseModel");
 const InnertubeResultParser_1 = __importDefault(require("./InnertubeResultParser"));
 const util_1 = require("../util");
-const YouTube2Context_1 = __importDefault(require("../YouTube2Context"));
 const AccountModelHelper_1 = require("./AccountModelHelper");
 class AccountModel extends BaseModel_1.BaseModel {
     constructor() {
@@ -23,40 +22,14 @@ class AccountModel extends BaseModel_1.BaseModel {
     }
     async getInfo() {
         const { innertube } = await this.getInnertube();
-        const { isSignedIn, response } = await (0, AccountModelHelper_1.getAccountInitialInfo)(innertube);
-        if (!isSignedIn) {
-            return {
-                isSignedIn: false,
-                info: null
-            };
-        }
-        const info = new volumio_youtubei_js_1.YT.AccountInfo(response);
-        // This plugin supports single sign-in, so there should only be one account in contents.
-        // But we still get the 'selected' one just to be sure.
-        const account = info.contents?.contents.find((ac) => ac.is(volumio_youtubei_js_1.YTNodes.AccountItem) && ac.is_selected);
-        if (account?.is(volumio_youtubei_js_1.YTNodes.AccountItem)) {
-            const name = InnertubeResultParser_1.default.unwrap(account?.account_name);
-            if (name) {
-                const result = {
-                    name,
-                    photo: InnertubeResultParser_1.default.parseThumbnail(account.account_photo)
-                };
-                try {
-                    const channel = await __classPrivateFieldGet(this, _AccountModel_instances, "m", _AccountModel_getChannelInfo).call(this);
-                    if (channel) {
-                        result.channel = channel;
-                    }
-                }
-                catch (error) {
-                    YouTube2Context_1.default.getLogger().error(YouTube2Context_1.default.getErrorMessage('[youtube2] AccountModel.#getChannelInfo() error:', error));
-                }
-                return {
-                    isSignedIn: true,
-                    info: result
-                };
+        const account = await (0, AccountModelHelper_1.getAccountInitialInfo)(innertube);
+        if (account.isSignedIn) {
+            const channel = await __classPrivateFieldGet(this, _AccountModel_instances, "m", _AccountModel_getChannelInfo).call(this);
+            if (channel) {
+                account.active.channel = channel;
             }
         }
-        throw Error('Signed in but unable to get account info');
+        return account;
     }
 }
 _AccountModel_instances = new WeakSet(), _AccountModel_getChannelInfo = async function _AccountModel_getChannelInfo() {

@@ -32,15 +32,15 @@ class RootViewHandler extends FeedViewHandler_1.default {
         }
         const accountModel = this.getModel(model_1.ModelType.Account);
         const account = await accountModel.getInfo();
-        if (account.info?.channel) {
+        if (account.active?.channel) {
             contents.sections.unshift({
                 type: 'section',
                 items: [
                     {
                         type: 'endpointLink',
-                        title: account.info.channel.title,
-                        thumbnail: account.info.photo,
-                        endpoint: account.info.channel.endpoint
+                        title: account.active.channel.title,
+                        thumbnail: account.active.photo,
+                        endpoint: account.active.channel.endpoint
                     }
                 ]
             });

@@ -18,6 +18,7 @@ export interface PluginConfigSchema {
     prefetch: PluginConfigSchemaEntry<boolean>;
     ytPlaybackMode: PluginConfigSchemaEntry<YouTubePlaybackMode, true>;
     cookie: PluginConfigSchemaEntry<string>;
+    activeChannelHandle: PluginConfigSchemaEntry<string>;
 }
 export interface YouTubePlaybackMode {
     feedVideos: boolean;
@@ -40,6 +41,10 @@ export interface I18nOptionValue {
 export interface Account {
     name: string;
     photo: string | null;
+    active: boolean;
+    handle: string;
+    pageId?: string;
+    datasyncIdToken: string;
     channel?: {
         title: string;
         endpoint: Endpoint | null;

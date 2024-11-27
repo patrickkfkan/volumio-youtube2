@@ -75,7 +75,7 @@ class ControllerYouTube2 {
         ];
         const configModel = model_1.default.getInstance(model_1.ModelType.Config);
         Promise.all(loadConfigPromises)
-            .then(([uiconf, i18nOptions, account, authStatus]) => {
+            .then(([uiconf, i18nOptions, account]) => {
             const i18nUIConf = uiconf.sections[0];
             const accountUIConf = uiconf.sections[1];
             const browseUIConf = uiconf.sections[2];
@@ -83,21 +83,37 @@ class ControllerYouTube2 {
             const ytPlaybackModeConf = uiconf.sections[4];
             // I18n
             // -- region
-            i18nUIConf.content[0].label = i18nOptions.options.region.label;
-            i18nUIConf.content[0].options = i18nOptions.options.region.optionValues;
+            i18nUIConf.content[0].label = i18nOptions.options.region?.label;
+            i18nUIConf.content[0].options = i18nOptions.options.region?.optionValues;
             i18nUIConf.content[0].value = i18nOptions.selected.region;
-            i18nUIConf.content[1].label = i18nOptions.options.language.label;
-            i18nUIConf.content[1].options = i18nOptions.options.language.optionValues;
+            i18nUIConf.content[1].label = i18nOptions.options.language?.label;
+            i18nUIConf.content[1].options = i18nOptions.options.language?.optionValues;
             i18nUIConf.content[1].value = i18nOptions.selected.language;
             // Account
             const cookie = YouTube2Context_1.default.getConfigValue('cookie');
             let authStatusDescription;
-            if (account?.isSignedIn && account.info) {
-                if (account.info.name) {
-                    authStatusDescription = YouTube2Context_1.default.getI18n('YOUTUBE2_AUTH_STATUS_SIGNED_IN_AS', account.info.name);
-                }
-                else {
-                    authStatusDescription = YouTube2Context_1.default.getI18n('YOUTUBE2_AUTH_STATUS_SIGNED_IN');
+            if (account?.isSignedIn && account.active) {
+                authStatusDescription = YouTube2Context_1.default.getI18n('YOUTUBE2_AUTH_STATUS_SIGNED_IN_AS', account.active.name);
+                if (account.list.length > 1) {
+                    const accountSelect = {
+                        id: 'activeChannelHandle',
+                        element: 'select',
+                        label: YouTube2Context_1.default.getI18n('YOUTUBE2_ACTIVE_CHANNEL'),
+                        value: {
+                            label: account.active.name,
+                            value: account.active.handle
+                        },
+                        options: account.list.map((ac) => ({
+                            label: ac.name,
+                            value: ac.handle
+                        }))
+                    };
+                    accountUIConf.content = [
+                        accountUIConf.content[0],
+                        accountSelect,
+                        ...accountUIConf.content.slice(1)
+                    ];
+                    accountUIConf.saveButton.data.push('activeChannelHandle');
                 }
             }
             else if (cookie) {
@@ -185,12 +201,23 @@ class ControllerYouTube2 {
     configSaveAccount(data) {
         const oldCookie = YouTube2Context_1.default.hasConfigKey('cookie') ? YouTube2Context_1.default.getConfigValue('cookie') : null;
         const cookie = data.cookie?.trim();
+        const oldActiveChannelHandle = YouTube2Context_1.default.getConfigValue('activeChannelHandle');
+        const activeChannelHandle = data.activeChannelHandle?.value || '';
+        let resetInnertube = false;
         if (oldCookie !== cookie) {
             YouTube2Context_1.default.setConfigValue('cookie', cookie);
+            YouTube2Context_1.default.deleteConfigValue('activeChannelHandle');
+            resetInnertube = true;
+        }
+        else if (oldActiveChannelHandle !== activeChannelHandle) {
+            YouTube2Context_1.default.setConfigValue('activeChannelHandle', activeChannelHandle);
+            resetInnertube = true;
+        }
+        YouTube2Context_1.default.toast('success', YouTube2Context_1.default.getI18n('YOUTUBE2_SETTINGS_SAVED'));
+        if (resetInnertube) {
             InnertubeLoader_1.default.reset();
             YouTube2Context_1.default.refreshUIConfig();
         }
-        YouTube2Context_1.default.toast('success', YouTube2Context_1.default.getI18n('YOUTUBE2_SETTINGS_SAVED'));
     }
     configSaveBrowse(data) {
         YouTube2Context_1.default.setConfigValue('rootContentType', data.rootContentType.value);

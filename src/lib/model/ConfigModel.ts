@@ -21,7 +21,8 @@ export const PLUGIN_CONFIG_SCHEMA: PluginConfigSchema = {
     feedVideos: true,
     playlistVideos: false
   }, json: true},
-  cookie: { defaultValue: '', json: false }
+  cookie: { defaultValue: '', json: false },
+  activeChannelHandle: { defaultValue: '', json: false }
 };
 
 export default class ConfigModel extends BaseModel {

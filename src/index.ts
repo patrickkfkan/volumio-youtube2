@@ -53,7 +53,7 @@ class ControllerYouTube2 implements NowPlayingPluginSupport {
     const configModel = Model.getInstance(ModelType.Config);
 
     Promise.all(loadConfigPromises)
-      .then(([ uiconf, i18nOptions, account, authStatus ]: any) => {
+      .then(([ uiconf, i18nOptions, account ]) => {
         const i18nUIConf = uiconf.sections[0];
         const accountUIConf = uiconf.sections[1];
         const browseUIConf = uiconf.sections[2];
@@ -62,22 +62,38 @@ class ControllerYouTube2 implements NowPlayingPluginSupport {
 
         // I18n
         // -- region
-        i18nUIConf.content[0].label = i18nOptions.options.region.label;
-        i18nUIConf.content[0].options = i18nOptions.options.region.optionValues;
+        i18nUIConf.content[0].label = i18nOptions.options.region?.label;
+        i18nUIConf.content[0].options = i18nOptions.options.region?.optionValues;
         i18nUIConf.content[0].value = i18nOptions.selected.region;
-        i18nUIConf.content[1].label = i18nOptions.options.language.label;
-        i18nUIConf.content[1].options = i18nOptions.options.language.optionValues;
+        i18nUIConf.content[1].label = i18nOptions.options.language?.label;
+        i18nUIConf.content[1].options = i18nOptions.options.language?.optionValues;
         i18nUIConf.content[1].value = i18nOptions.selected.language;
 
         // Account
         const cookie = yt2.getConfigValue('cookie');
         let authStatusDescription;
-        if (account?.isSignedIn && account.info) {
-          if (account.info.name) {
-            authStatusDescription = yt2.getI18n('YOUTUBE2_AUTH_STATUS_SIGNED_IN_AS', account.info.name);
-          }
-          else {
-            authStatusDescription = yt2.getI18n('YOUTUBE2_AUTH_STATUS_SIGNED_IN');
+        if (account?.isSignedIn && account.active) {
+          authStatusDescription = yt2.getI18n('YOUTUBE2_AUTH_STATUS_SIGNED_IN_AS', account.active.name);
+          if (account.list.length > 1) {
+            const accountSelect = {
+              id: 'activeChannelHandle',
+              element: 'select',
+              label: yt2.getI18n('YOUTUBE2_ACTIVE_CHANNEL'),
+              value: {
+                label: account.active.name,
+                value: account.active.handle
+              },
+              options: account.list.map((ac) => ({
+                label: ac.name,
+                value: ac.handle
+              }))
+            };
+            accountUIConf.content = [
+              accountUIConf.content[0],
+              accountSelect,
+              ...accountUIConf.content.slice(1)
+            ];
+            accountUIConf.saveButton.data.push('activeChannelHandle');
           }
         }
         else if (cookie) {
@@ -232,12 +248,23 @@ class ControllerYouTube2 implements NowPlayingPluginSupport {
   configSaveAccount(data: any) {
     const oldCookie = yt2.hasConfigKey('cookie') ? yt2.getConfigValue('cookie') : null;
     const cookie = data.cookie?.trim();
+    const oldActiveChannelHandle = yt2.getConfigValue('activeChannelHandle');
+    const activeChannelHandle = data.activeChannelHandle?.value || '';
+    let resetInnertube = false;
     if (oldCookie !== cookie) {
       yt2.setConfigValue('cookie', cookie);
+      yt2.deleteConfigValue('activeChannelHandle');
+      resetInnertube = true;
+    }
+    else if (oldActiveChannelHandle !== activeChannelHandle) {
+      yt2.setConfigValue('activeChannelHandle', activeChannelHandle);
+      resetInnertube =  true;
+    }
+    yt2.toast('success', yt2.getI18n('YOUTUBE2_SETTINGS_SAVED'));
+    if (resetInnertube) {
       InnertubeLoader.reset();
       yt2.refreshUIConfig();
     }
-    yt2.toast('success', yt2.getI18n('YOUTUBE2_SETTINGS_SAVED'));
   }
 
   configSaveBrowse(data: any) {
