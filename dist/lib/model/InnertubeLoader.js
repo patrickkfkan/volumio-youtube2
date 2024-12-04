@@ -15,11 +15,21 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 var _a, _InnertubeLoader_innertube, _InnertubeLoader_pendingPromise, _InnertubeLoader_poTokenRefreshTimer, _InnertubeLoader_recreateWithPOToken, _InnertubeLoader_createInstance, _InnertubeLoader_clearPOTokenRefreshTimer, _InnertubeLoader_resolveGetInstanceResult, _InnertubeLoader_refreshPOToken, _InnertubeLoader_generatePoToken;
 Object.defineProperty(exports, "__esModule", { value: true });
+const node_fetch_1 = __importDefault(require("node-fetch"));
 const YouTube2Context_1 = __importDefault(require("../YouTube2Context"));
 const volumio_youtubei_js_1 = __importDefault(require("volumio-youtubei.js"));
 const bgutils_js_1 = __importDefault(require("bgutils-js"));
 const jsdom_1 = require("jsdom");
 const AccountModelHelper_1 = require("./AccountModelHelper");
+const atob_1 = __importDefault(require("atob"));
+const btoa_1 = __importDefault(require("btoa"));
+// Polyfill for BGUtils
+if (globalThis && !globalThis.atob) {
+    globalThis.atob = atob_1.default;
+}
+if (globalThis && !globalThis.btoa) {
+    globalThis.btoa = btoa_1.default;
+}
 var Stage;
 (function (Stage) {
     Stage["Init"] = "1 - Init";
@@ -192,7 +202,7 @@ _a = InnertubeLoader, _InnertubeLoader_recreateWithPOToken = async function _Inn
 }, _InnertubeLoader_generatePoToken = async function _InnertubeLoader_generatePoToken(identifier) {
     const requestKey = 'O43z0dpjhgX20SCx4KAo';
     const bgConfig = {
-        fetch: (url, options) => fetch(url, options),
+        fetch: (url, options) => (0, node_fetch_1.default)(url, options),
         globalObj: globalThis,
         identifier,
         requestKey

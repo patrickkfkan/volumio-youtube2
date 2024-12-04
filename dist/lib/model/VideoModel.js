@@ -9,6 +9,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 var _VideoModel_instances, _VideoModel_chooseFormat, _VideoModel_parseStreamData, _VideoModel_getStreamUrlFromHLS;
 Object.defineProperty(exports, "__esModule", { value: true });
+const node_fetch_1 = __importDefault(require("node-fetch"));
 const YouTube2Context_1 = __importDefault(require("../YouTube2Context"));
 const BaseModel_1 = require("./BaseModel");
 const InnertubeResultParser_1 = __importDefault(require("./InnertubeResultParser"));
@@ -104,7 +105,7 @@ _VideoModel_instances = new WeakSet(), _VideoModel_chooseFormat = function _Vide
     if (!targetQuality || targetQuality === 'auto') {
         return manifestUrl;
     }
-    const res = await fetch(manifestUrl);
+    const res = await (0, node_fetch_1.default)(manifestUrl);
     const manifestContents = await res.text();
     // Match Resolution and Url
     const regex = /#EXT-X-STREAM-INF.*RESOLUTION=(\d+x\d+).*[\r\n](.+)/gm;

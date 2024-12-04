@@ -1,3 +1,4 @@
+import fetch from 'node-fetch';
 import {type YT, type Types} from 'volumio-youtubei.js';
 import type Innertube from 'volumio-youtubei.js';
 import yt2 from '../YouTube2Context';

@@ -1,8 +1,19 @@
+import fetch from 'node-fetch';
 import yt2 from '../YouTube2Context';
-import Innertube, { YTNodes } from 'volumio-youtubei.js';
+import Innertube from 'volumio-youtubei.js';
 import BG, { type BgConfig } from 'bgutils-js';
 import { JSDOM } from 'jsdom';
 import { getAccountInitialInfo } from './AccountModelHelper';
+import atob from 'atob';
+import btoa from 'btoa';
+
+// Polyfill for BGUtils
+if (globalThis && !globalThis.atob) {
+  globalThis.atob = atob;
+}
+if (globalThis && !globalThis.btoa) {
+  globalThis.btoa = btoa;
+}
 
 export interface InnertubeLoaderGetInstanceResult {
   innertube: Innertube;
@@ -225,7 +236,7 @@ export default class InnertubeLoader {
   static async #generatePoToken(identifier: string) {
     const requestKey = 'O43z0dpjhgX20SCx4KAo';
     const bgConfig: BgConfig = {
-      fetch: (url, options) => fetch(url, options),
+      fetch: (url, options) => fetch(url as any, options as any) as any,
       globalObj: globalThis,
       identifier,
       requestKey
