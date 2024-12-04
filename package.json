@@ -1,11 +1,10 @@
 {
 	"name": "youtube2",
-	"version": "1.2.2",
+	"version": "2.2.0",
 	"description": "YouTube plugin for Volumio",
 	"main": "./dist/index.js",
 	"scripts": {
-		"build": "npm run prepare",
-		"prepare": "rm -rf dist && npx tsc --build src && bash fixup.sh",
+		"build": "rm -rf dist && npx tsc --build src && bash fixup.sh",
 		"lint": "npx eslint ./src",
 		"lint:fix": "npx eslint ./src --fix"
 	},
@@ -19,7 +18,7 @@
 		"prettyName": "YouTube2",
 		"plugin_type": "music_service",
 		"os": [
-			"buster"
+			"bookworm"
 		],
 		"icon": "fa-youtube-play",
 		"boot_priority": 10,
@@ -27,33 +26,32 @@
 		"changelog": "",
 		"architectures": [
 			"amd64",
-			"armhf",
-			"i386"
+			"armhf"
 		]
 	},
 	"engines": {
-		"node": ">=14",
-		"volumio": ">=3"
+		"node": ">=20",
+		"volumio": ">=0"
 	},
 	"devDependencies": {
 		"@types/fs-extra": "^8.1.2",
-		"@types/md5": "^2.3.2",
-		"@types/node": "^14.18.38",
-		"@types/node-fetch": "^2.6.4",
+		"@types/jsdom": "^21.1.7",
+		"@types/node": "^20.5.1",
 		"@types/string-format": "^2.0.0",
-		"@typescript-eslint/eslint-plugin": "^5.56.0",
-		"@typescript-eslint/parser": "^5.56.0",
-		"eslint": "^8.36.0",
-		"ts-node": "^10.9.1",
-		"typescript": "^4.9.5",
+		"@typescript-eslint/eslint-plugin": "^8.6.0",
+		"@typescript-eslint/parser": "^8.6.0",
+		"eslint": "^9.10.0",
+		"typescript": "^5.5.4",
+		"typescript-eslint": "^8.6.0",
 		"winston": "^3.8.2"
 	},
 	"dependencies": {
+		"bgutils-js": "^3.0.0",
+		"jsdom": "^25.0.1",
 		"kew": "^0.7.0",
-		"node-fetch": "^2.6.7",
 		"now-playing-common": "git+https://github.com/patrickkfkan/volumio-now-playing-common#v0.3.2",
 		"string-format": "^2.0.0",
 		"v-conf": "^1.4.2",
-		"volumio-youtubei.js": "git+https://github.com/patrickkfkan/Volumio-YouTube.js.git#v0.3.9"
+		"volumio-youtubei.js": "file:dep/volumio-youtubei.js-1.3.0.tgz"
 	}
 }

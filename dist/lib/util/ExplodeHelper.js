@@ -167,7 +167,6 @@ class ExplodeHelper {
         };
     }
 }
-exports.default = ExplodeHelper;
 _a = ExplodeHelper, _ExplodeHelper_getUriFromExplodedTrackInfo = function _ExplodeHelper_getUriFromExplodedTrackInfo(info) {
     /**
      * `explodeTrackData` - necessary because Volumio adds track uri in
@@ -181,4 +180,5 @@ _a = ExplodeHelper, _ExplodeHelper_getUriFromExplodedTrackInfo = function _Explo
     };
     return `youtube2/${ViewHelper_1.default.constructUriSegmentFromView(targetView)}`;
 };
+exports.default = ExplodeHelper;
 //# sourceMappingURL=ExplodeHelper.js.map

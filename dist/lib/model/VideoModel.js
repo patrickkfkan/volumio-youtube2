@@ -9,7 +9,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 var _VideoModel_instances, _VideoModel_chooseFormat, _VideoModel_parseStreamData, _VideoModel_getStreamUrlFromHLS;
 Object.defineProperty(exports, "__esModule", { value: true });
-const node_fetch_1 = __importDefault(require("node-fetch"));
 const YouTube2Context_1 = __importDefault(require("../YouTube2Context"));
 const BaseModel_1 = require("./BaseModel");
 const InnertubeResultParser_1 = __importDefault(require("./InnertubeResultParser"));
@@ -53,7 +52,7 @@ class VideoModel extends BaseModel_1.BaseModel {
                     return info?.addToWatchHistory();
                 }
             };
-            if (info.playability_status.status === 'UNPLAYABLE') {
+            if (info.playability_status?.status === 'UNPLAYABLE') {
                 // Check if this video has a trailer (non-purchased movies / films)
                 if (info.has_trailer) {
                     const trailerInfo = info.getTrailerInfo();
@@ -81,7 +80,6 @@ class VideoModel extends BaseModel_1.BaseModel {
         }
     }
 }
-exports.default = VideoModel;
 _VideoModel_instances = new WeakSet(), _VideoModel_chooseFormat = function _VideoModel_chooseFormat(innertube, videoInfo) {
     const format = videoInfo?.chooseFormat(BEST_AUDIO_FORMAT);
     const streamUrl = format ? format.decipher(innertube.session.player) : null;
@@ -106,7 +104,7 @@ _VideoModel_instances = new WeakSet(), _VideoModel_chooseFormat = function _Vide
     if (!targetQuality || targetQuality === 'auto') {
         return manifestUrl;
     }
-    const res = await (0, node_fetch_1.default)(manifestUrl);
+    const res = await fetch(manifestUrl);
     const manifestContents = await res.text();
     // Match Resolution and Url
     const regex = /#EXT-X-STREAM-INF.*RESOLUTION=(\d+x\d+).*[\r\n](.+)/gm;
@@ -137,4 +135,5 @@ _VideoModel_instances = new WeakSet(), _VideoModel_chooseFormat = function _Vide
     const closest = diffs.filter((v) => v.qualityDelta >= 0).sort((v1, v2) => v1.qualityDelta - v2.qualityDelta)[0];
     return closest?.variant.url || playlistVariants[0]?.url || null;
 };
+exports.default = VideoModel;
 //# sourceMappingURL=VideoModel.js.map
