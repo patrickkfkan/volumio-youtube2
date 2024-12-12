@@ -1,5 +1,5 @@
 import yt2 from '../YouTube2Context';
-import Innertube, { YTNodes } from 'volumio-youtubei.js';
+import Innertube from 'volumio-youtubei.js';
 import BG, { type BgConfig } from 'bgutils-js';
 import { JSDOM } from 'jsdom';
 import { getAccountInitialInfo } from './AccountModelHelper';
