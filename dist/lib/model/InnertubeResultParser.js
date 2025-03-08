@@ -365,7 +365,7 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
         }
         description = this.unwrap(data.description);
     }
-    // Playlist
+    // Playlist --> Seems to have been replaced with PageHeader, but leave it here for the time being.
     else if (data.is(volumio_youtubei_js_1.YTNodes.PlaylistHeader)) {
         type = 'playlist';
         title = this.unwrap(data.title);
@@ -416,12 +416,26 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
             }
         }
     }
-    // Generic PageHeader - need to check if 'channel' type
-    else if (data.is(volumio_youtubei_js_1.YTNodes.PageHeader) && metadata?.is(volumio_youtubei_js_1.YTNodes.ChannelMetadata)) {
-        type = 'channel';
+    // Generic PageHeader - need to check if 'channel' / 'playlist' type
+    else if (data.is(volumio_youtubei_js_1.YTNodes.PageHeader) && metadata?.is(volumio_youtubei_js_1.YTNodes.ChannelMetadata, volumio_youtubei_js_1.YTNodes.PlaylistMetadata)) {
         title = this.unwrap(data.content?.title?.text);
         description = metadata.description;
-        thumbnail = this.parseThumbnail(metadata.avatar);
+        if (metadata.is(volumio_youtubei_js_1.YTNodes.ChannelMetadata)) {
+            type = 'channel';
+            thumbnail = this.parseThumbnail(metadata.avatar);
+            if (metadata.external_id) {
+                endpoint = {
+                    type: Endpoint_1.EndpointType.Browse,
+                    payload: {
+                        browseId: metadata.external_id
+                    }
+                };
+            }
+        }
+        else {
+            type = 'playlist';
+            thumbnail = this.parseThumbnail(data.content?.hero_image?.image);
+        }
         if (data.content?.metadata?.metadata_rows) {
             for (const row of data.content?.metadata?.metadata_rows || []) {
                 const parts = row.metadata_parts?.reduce((result, { text }) => {
@@ -435,14 +449,6 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
                     subtitles.push(...parts);
                 }
             }
-        }
-        if (metadata.external_id) {
-            endpoint = {
-                type: Endpoint_1.EndpointType.Browse,
-                payload: {
-                    browseId: metadata.external_id
-                }
-            };
         }
     }
     if (type && title) {

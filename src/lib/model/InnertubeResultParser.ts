@@ -312,7 +312,7 @@ export default class InnertubeResultParser {
       }
       description = this.unwrap(data.description);
     }
-    // Playlist
+    // Playlist --> Seems to have been replaced with PageHeader, but leave it here for the time being.
     else if (data.is(YTNodes.PlaylistHeader)) {
       type = 'playlist';
       title = this.unwrap(data.title);
@@ -364,12 +364,26 @@ export default class InnertubeResultParser {
         }
       }
     }
-    // Generic PageHeader - need to check if 'channel' type
-    else if (data.is(YTNodes.PageHeader) && metadata?.is(YTNodes.ChannelMetadata)) {
-      type = 'channel';
+    // Generic PageHeader - need to check if 'channel' / 'playlist' type
+    else if (data.is(YTNodes.PageHeader) && metadata?.is(YTNodes.ChannelMetadata, YTNodes.PlaylistMetadata)) {
       title = this.unwrap(data.content?.title?.text);
       description = metadata.description;
-      thumbnail = this.parseThumbnail(metadata.avatar);
+      if (metadata.is(YTNodes.ChannelMetadata)) {
+        type = 'channel';
+        thumbnail = this.parseThumbnail(metadata.avatar);
+        if (metadata.external_id) {
+          endpoint = {
+            type: EndpointType.Browse,
+            payload: {
+              browseId: metadata.external_id
+            }
+          };
+        }
+      }
+      else {
+        type = 'playlist';
+        thumbnail = this.parseThumbnail(data.content?.hero_image?.image);
+      }
       if (data.content?.metadata?.metadata_rows) {
         for (const row of data.content?.metadata?.metadata_rows || []) {
           const parts = row.metadata_parts?.reduce<string[]>((result, { text }) => {
@@ -383,14 +397,6 @@ export default class InnertubeResultParser {
             subtitles.push(...parts);
           }
         }
-      }
-      if (metadata.external_id) {
-        endpoint = {
-          type: EndpointType.Browse,
-          payload: {
-            browseId: metadata.external_id
-          }
-        };
       }
     }
 
