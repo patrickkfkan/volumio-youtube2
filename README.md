@@ -6,6 +6,9 @@ Credit goes to the [YouTube.js](https://github.com/LuanRT/YouTube.js) project. T
 
 ### Changelog
 
+1.4.1 (Buster backport)
+- Backport from main v2.3.1
+
 1.4.0 (Buster backport)
 - Backport from main v2.3.0
 
@@ -20,6 +23,9 @@ Credit goes to the [YouTube.js](https://github.com/LuanRT/YouTube.js) project. T
 
 1.3.0 (Buster backport)
 - Backport from main v2.2.0
+
+2.3.1
+- Fix blank page for some categories (e.g. Music)
 
 2.3.0
 - Update YT dependencies
