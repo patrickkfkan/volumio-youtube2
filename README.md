@@ -6,6 +6,9 @@ Credit goes to the [YouTube.js](https://github.com/LuanRT/YouTube.js) project. T
 
 ### Changelog
 
+2.3.1
+- Fix blank page for some categories (e.g. Music)
+
 2.3.0
 - Update YT dependencies
 - Fix missing playlist header due to YT changes
