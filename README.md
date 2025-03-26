@@ -24,6 +24,9 @@ Credit goes to the [YouTube.js](https://github.com/LuanRT/YouTube.js) project. T
 1.3.0 (Buster backport)
 - Backport from main v2.2.0
 
+2.3.2
+- Update YT dependencies
+
 2.3.1
 - Fix blank page for some categories (e.g. Music)
 
