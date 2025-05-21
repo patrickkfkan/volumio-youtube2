@@ -6,6 +6,10 @@ Credit goes to the [YouTube.js](https://github.com/LuanRT/YouTube.js) project. T
 
 ### Changelog
 
+2.3.3
+- Update YT dependencies
+- Fix "No valid URL to decipher" error when fetching some video streams
+
 2.3.2
 - Update YT dependencies
 
