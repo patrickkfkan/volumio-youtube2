@@ -9,6 +9,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 var _VideoModel_instances, _VideoModel_chooseFormat, _VideoModel_parseStreamData, _VideoModel_getStreamUrlFromHLS;
 Object.defineProperty(exports, "__esModule", { value: true });
+const volumio_youtubei_js_1 = require("volumio-youtubei.js");
 const YouTube2Context_1 = __importDefault(require("../YouTube2Context"));
 const BaseModel_1 = require("./BaseModel");
 const InnertubeResultParser_1 = __importDefault(require("./InnertubeResultParser"));
@@ -32,10 +33,10 @@ class VideoModel extends BaseModel_1.BaseModel {
         super(...arguments);
         _VideoModel_instances.add(this);
     }
-    async getPlaybackInfo(videoId) {
+    async getPlaybackInfo(videoId, client) {
         const { innertube } = await this.getInnertube();
         try {
-            const info = await innertube.getBasicInfo(videoId);
+            const info = await innertube.getBasicInfo(videoId, client);
             const basicInfo = info.basic_info;
             const result = {
                 type: 'video',
@@ -65,7 +66,18 @@ class VideoModel extends BaseModel_1.BaseModel {
                 }
             }
             else if (!result.isLive) {
-                result.stream = __classPrivateFieldGet(this, _VideoModel_instances, "m", _VideoModel_chooseFormat).call(this, innertube, info);
+                try {
+                    result.stream = __classPrivateFieldGet(this, _VideoModel_instances, "m", _VideoModel_chooseFormat).call(this, innertube, info);
+                }
+                catch (error) {
+                    if (error instanceof volumio_youtubei_js_1.Utils.PlayerError && client !== 'WEB_EMBEDDED') {
+                        // Sometimes with default client we fail to get the stream because format is missing url / cipher, leading to 
+                        // "No valid URL to decipher" error. In this case, we retry with 'WEB_EMBEDDED' client.
+                        YouTube2Context_1.default.getLogger().warn(`[youtube2] Error getting stream with default client in VideoModel.getInfo(${videoId}): ${error.message} - retry with 'WEB_EMBEDDED' client.`);
+                        return await this.getPlaybackInfo(videoId, 'WEB_EMBEDDED');
+                    }
+                    throw error;
+                }
             }
             else {
                 const hlsManifestUrl = info.streaming_data?.hls_manifest_url;

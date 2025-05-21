@@ -1,4 +1,4 @@
-import {type YT, type Types} from 'volumio-youtubei.js';
+import {type YT, type Types, Utils} from 'volumio-youtubei.js';
 import type Innertube from 'volumio-youtubei.js';
 import yt2 from '../YouTube2Context';
 import type VideoPlaybackInfo from '../types/VideoPlaybackInfo';
@@ -29,11 +29,11 @@ interface HLSPlaylistVariant {
 
 export default class VideoModel extends BaseModel {
 
-  async getPlaybackInfo(videoId: string): Promise<VideoPlaybackInfo | null> {
+  async getPlaybackInfo(videoId: string, client?: Types.InnerTubeClient): Promise<VideoPlaybackInfo | null> {
     const { innertube } = await this.getInnertube();
 
     try {
-      const info = await innertube.getBasicInfo(videoId);
+      const info = await innertube.getBasicInfo(videoId, client);
       const basicInfo = info.basic_info;
 
       const result: VideoPlaybackInfo = {
@@ -65,7 +65,18 @@ export default class VideoModel extends BaseModel {
         }
       }
       else if (!result.isLive) {
-        result.stream = this.#chooseFormat(innertube, info);
+        try {
+          result.stream = this.#chooseFormat(innertube, info);
+        }
+        catch (error) {
+          if (error instanceof Utils.PlayerError && client !== 'WEB_EMBEDDED') {
+            // Sometimes with default client we fail to get the stream because format is missing url / cipher, leading to 
+            // "No valid URL to decipher" error. In this case, we retry with 'WEB_EMBEDDED' client.
+            yt2.getLogger().warn(`[youtube2] Error getting stream with default client in VideoModel.getInfo(${videoId}): ${error.message} - retry with 'WEB_EMBEDDED' client.`);
+            return await this.getPlaybackInfo(videoId, 'WEB_EMBEDDED');
+          }
+          throw error;
+        }
       }
       else {
         const hlsManifestUrl = info.streaming_data?.hls_manifest_url;

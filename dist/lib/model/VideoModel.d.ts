@@ -1,7 +1,8 @@
+import { type Types } from 'volumio-youtubei.js';
 import type VideoPlaybackInfo from '../types/VideoPlaybackInfo';
 import { BaseModel } from './BaseModel';
 export default class VideoModel extends BaseModel {
     #private;
-    getPlaybackInfo(videoId: string): Promise<VideoPlaybackInfo | null>;
+    getPlaybackInfo(videoId: string, client?: Types.InnerTubeClient): Promise<VideoPlaybackInfo | null>;
 }
 //# sourceMappingURL=VideoModel.d.ts.map
