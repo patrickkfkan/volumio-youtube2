@@ -1174,6 +1174,24 @@ export default class InnertubeResultParser {
       return __checkType(result);
     }
 
+    // Playlist continuation
+    if (Array.isArray(data.payload.commands)) {
+      for (const command of data.payload.commands) {
+        if (command && typeof command === 'object' &&
+          command.continuationCommand && typeof command.continuationCommand === 'object'
+        ) {
+          const { token, request } = command.continuationCommand;
+          if (token && typeof token === 'string' && request === 'CONTINUATION_REQUEST_TYPE_BROWSE') {
+            const result: BrowseContinuationEndpoint = {
+              type: EndpointType.BrowseContinuation,
+              payload: { token }
+            };
+            return __checkType(result);  
+          }
+        }
+      }
+    }
+
     return null;
   }
 }
