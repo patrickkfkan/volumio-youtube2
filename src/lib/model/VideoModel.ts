@@ -33,7 +33,7 @@ export default class VideoModel extends BaseModel {
     const { innertube } = await this.getInnertube();
 
     try {
-      const info = await innertube.getBasicInfo(videoId, client);
+      const info = await innertube.getBasicInfo(videoId, { client });
       const basicInfo = info.basic_info;
 
       const result: VideoPlaybackInfo = {

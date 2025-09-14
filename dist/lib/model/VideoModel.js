@@ -36,7 +36,7 @@ class VideoModel extends BaseModel_1.BaseModel {
     async getPlaybackInfo(videoId, client) {
         const { innertube } = await this.getInnertube();
         try {
-            const info = await innertube.getBasicInfo(videoId, client);
+            const info = await innertube.getBasicInfo(videoId, { client });
             const basicInfo = info.basic_info;
             const result = {
                 type: 'video',

@@ -53,6 +53,6 @@
 		"now-playing-common": "git+https://github.com/patrickkfkan/volumio-now-playing-common#v0.3.2",
 		"string-format": "^2.0.0",
 		"v-conf": "^1.4.2",
-		"volumio-youtubei.js": "file:dep/volumio-youtubei.js-1.4.3.tgz"
+		"volumio-youtubei.js": "file:dep/volumio-youtubei.js-1.5.0.tgz"
 	}
 }
