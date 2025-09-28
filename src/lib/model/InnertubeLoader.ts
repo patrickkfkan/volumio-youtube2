@@ -141,7 +141,8 @@ export default class InnertubeLoader {
       cookie: yt2.getConfigValue('cookie') || undefined,
       visitor_data: poToken?.params.visitorData,
       on_behalf_of_user: poToken?.params.identifier.pageId,
-      po_token: poToken?.value
+      po_token: poToken?.value,
+      player_id: '0004de42' // https://github.com/LuanRT/YouTube.js/issues/1043
     });
     switch (stage) {
       case Stage.Init:
