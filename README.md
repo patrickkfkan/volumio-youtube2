@@ -6,6 +6,9 @@ Credit goes to the [YouTube.js](https://github.com/LuanRT/YouTube.js) project. T
 
 ### Changelog
 
+2.3.5
+- Fix Innertube signature decipher algo extraction (for now)
+
 2.3.4
 - Update YT dependencies and adapt to YT changes
 
