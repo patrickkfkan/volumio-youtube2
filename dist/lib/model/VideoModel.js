@@ -7,7 +7,7 @@ var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-var _VideoModel_instances, _VideoModel_chooseFormat, _VideoModel_parseStreamData, _VideoModel_getStreamUrlFromHLS;
+var _VideoModel_instances, _VideoModel_sleep, _VideoModel_head, _VideoModel_chooseFormat, _VideoModel_parseStreamData, _VideoModel_getStreamUrlFromHLS;
 Object.defineProperty(exports, "__esModule", { value: true });
 const volumio_youtubei_js_1 = require("volumio-youtubei.js");
 const YouTube2Context_1 = __importDefault(require("../YouTube2Context"));
@@ -33,10 +33,13 @@ class VideoModel extends BaseModel_1.BaseModel {
         super(...arguments);
         _VideoModel_instances.add(this);
     }
-    async getPlaybackInfo(videoId, client) {
+    async getPlaybackInfo(videoId, client, signal) {
         const { innertube } = await this.getInnertube();
         try {
             const info = await innertube.getBasicInfo(videoId, { client });
+            if (signal?.aborted) {
+                throw Error('Aborted');
+            }
             const basicInfo = info.basic_info;
             const result = {
                 type: 'video',
@@ -84,6 +87,35 @@ class VideoModel extends BaseModel_1.BaseModel {
                 const streamUrlFromHLS = hlsManifestUrl ? await __classPrivateFieldGet(this, _VideoModel_instances, "m", _VideoModel_getStreamUrlFromHLS).call(this, hlsManifestUrl, YouTube2Context_1.default.getConfigValue('liveStreamQuality')) : null;
                 result.stream = streamUrlFromHLS ? { url: streamUrlFromHLS } : null;
             }
+            // Might need to wait a few seconds before stream becomes accessible (instead of getting 403 Forbidden).
+            // We add a test routine here and sleep for a while between retries
+            // See: https://github.com/yt-dlp/yt-dlp/issues/14097
+            if (result.stream) {
+                const startTime = new Date().getTime();
+                YouTube2Context_1.default.getLogger().info(`[youtube2] VideoModel.getInfo(${videoId}): validating stream URL "${result.stream.url}"...`);
+                let tries = 0;
+                let testStreamResult = await __classPrivateFieldGet(this, _VideoModel_instances, "m", _VideoModel_head).call(this, result.stream.url, signal);
+                while (!testStreamResult.ok && tries < 3) {
+                    if (signal?.aborted) {
+                        throw Error('Aborted');
+                    }
+                    YouTube2Context_1.default.getLogger().warn(`[youtube2] VideoModel.getInfo(${videoId}): stream validation failed (${testStreamResult.status} - ${testStreamResult.statusText}); retrying after 2s...`);
+                    await __classPrivateFieldGet(this, _VideoModel_instances, "m", _VideoModel_sleep).call(this, 2000);
+                    tries++;
+                    testStreamResult = await __classPrivateFieldGet(this, _VideoModel_instances, "m", _VideoModel_head).call(this, result.stream.url);
+                }
+                const endTime = new Date().getTime();
+                const timeTaken = (endTime - startTime) / 1000;
+                if (tries === 3) {
+                    YouTube2Context_1.default.getLogger().warn(`[youtube2] VideoModel.getInfo(${videoId}): failed to validate stream URL "${result.stream.url}" (retried ${tries} times in ${timeTaken}s).`);
+                }
+                else {
+                    YouTube2Context_1.default.getLogger().info(`[youtube2] VideoModel.getInfo(${videoId}): stream validated in ${timeTaken}s.`);
+                }
+            }
+            if (signal?.aborted) {
+                throw Error('Aborted');
+            }
             return result;
         }
         catch (error) {
@@ -92,7 +124,16 @@ class VideoModel extends BaseModel_1.BaseModel {
         }
     }
 }
-_VideoModel_instances = new WeakSet(), _VideoModel_chooseFormat = function _VideoModel_chooseFormat(innertube, videoInfo) {
+_VideoModel_instances = new WeakSet(), _VideoModel_sleep = function _VideoModel_sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}, _VideoModel_head = async function _VideoModel_head(url, signal) {
+    const res = await fetch(url, { method: 'HEAD', signal });
+    return {
+        ok: res.ok,
+        status: res.status,
+        statusText: res.statusText
+    };
+}, _VideoModel_chooseFormat = function _VideoModel_chooseFormat(innertube, videoInfo) {
     const format = videoInfo?.chooseFormat(BEST_AUDIO_FORMAT);
     const streamUrl = format ? format.decipher(innertube.session.player) : null;
     const streamData = format ? { ...format, url: streamUrl } : null;

@@ -29,11 +29,14 @@ interface HLSPlaylistVariant {
 
 export default class VideoModel extends BaseModel {
 
-  async getPlaybackInfo(videoId: string, client?: Types.InnerTubeClient): Promise<VideoPlaybackInfo | null> {
+  async getPlaybackInfo(videoId: string, client?: Types.InnerTubeClient, signal?: AbortSignal): Promise<VideoPlaybackInfo | null> {
     const { innertube } = await this.getInnertube();
 
     try {
       const info = await innertube.getBasicInfo(videoId, { client });
+      if (signal?.aborted) {
+        throw Error('Aborted');
+      }
       const basicInfo = info.basic_info;
 
       const result: VideoPlaybackInfo = {
@@ -84,13 +87,56 @@ export default class VideoModel extends BaseModel {
         result.stream = streamUrlFromHLS ? { url: streamUrlFromHLS } : null;
       }
 
-      return result;
+      // Might need to wait a few seconds before stream becomes accessible (instead of getting 403 Forbidden).
+      // We add a test routine here and sleep for a while between retries
+      // See: https://github.com/yt-dlp/yt-dlp/issues/14097
+      if (result.stream) {
+        const startTime = new Date().getTime();
+        yt2.getLogger().info(`[youtube2] VideoModel.getInfo(${videoId}): validating stream URL "${result.stream.url}"...`);
+        let tries = 0;
+        let testStreamResult = await this.#head(result.stream.url, signal);
+        while (!testStreamResult.ok && tries < 3) {
+          if (signal?.aborted) {
+            throw Error('Aborted');
+          }
+          yt2.getLogger().warn(`[youtube2] VideoModel.getInfo(${videoId}): stream validation failed (${testStreamResult.status} - ${testStreamResult.statusText}); retrying after 2s...`);
+          await this.#sleep(2000);
+          tries++;
+          testStreamResult = await this.#head(result.stream.url);
+        }
+        const endTime = new Date().getTime();
+        const timeTaken = (endTime - startTime) / 1000;
+        if (tries === 3) {
+          yt2.getLogger().warn(`[youtube2] VideoModel.getInfo(${videoId}): failed to validate stream URL "${result.stream.url}" (retried ${tries} times in ${timeTaken}s).`);
+        }
+        else {
+          yt2.getLogger().info(`[youtube2] VideoModel.getInfo(${videoId}): stream validated in ${timeTaken}s.`);
+        }
+      }
 
+      if (signal?.aborted) {
+        throw Error('Aborted');
+      }
+
+      return result;
     }
     catch (error) {
       yt2.getLogger().error(yt2.getErrorMessage(`[youtube2] Error in VideoModel.getInfo(${videoId}): `, error));
       return null;
     }
+  }
+
+  #sleep(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  async #head(url: string, signal?: AbortSignal) {
+    const res = await fetch(url, { method: 'HEAD', signal });
+    return {
+      ok: res.ok,
+      status: res.status,
+      statusText: res.statusText
+    };
   }
 
   #chooseFormat(innertube: Innertube, videoInfo: YT.VideoInfo): VideoPlaybackInfo['stream'] | null {
