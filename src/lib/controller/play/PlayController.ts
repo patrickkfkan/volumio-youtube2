@@ -31,6 +31,7 @@ export default class PlayController {
     position: number;
   };
   #prefetchPlaybackStateFixer: PrefetchPlaybackStateFixer | null;
+  #prefetchAborter: AbortController | null;
 
   constructor() {
     this.#mpdPlugin = yt2.getMpdPlugin();
@@ -39,6 +40,7 @@ export default class PlayController {
     this.#prefetchPlaybackStateFixer.on('playPrefetch', (info: { track: QueueItem; position: number; }) => {
       this.#lastPlaybackInfo = info;
     });
+    this.#prefetchAborter = null;
   }
 
   reset() {
@@ -76,6 +78,7 @@ export default class PlayController {
   async clearAddPlayTrack(track: QueueItem) {
     yt2.getLogger().info(`[youtube2-play] clearAddPlayTrack: ${track.uri}`);
 
+    this.#cancelPrefetch();
     this.#prefetchPlaybackStateFixer?.notifyPrefetchCleared();
 
     const {videoId, info: playbackInfo} = await PlayController.getPlaybackInfoFromUri(track.uri);
@@ -173,7 +176,7 @@ export default class PlayController {
     return yt2.getStateMachine().previous();
   }
 
-  static async getPlaybackInfoFromUri(uri: string): Promise<{videoId: string; info: VideoPlaybackInfo | null}> {
+  static async getPlaybackInfoFromUri(uri: string, signal?: AbortSignal): Promise<{videoId: string; info: VideoPlaybackInfo | null}> {
     const watchEndpoint = ExplodeHelper.getExplodedTrackInfoFromUri(uri)?.endpoint;
     const videoId = watchEndpoint?.payload?.videoId;
     if (!videoId) {
@@ -183,7 +186,7 @@ export default class PlayController {
     const model = Model.getInstance(ModelType.Video);
     return {
       videoId,
-      info: await model.getPlaybackInfo(videoId)
+      info: await model.getPlaybackInfo(videoId, undefined, signal)
     };
   }
 
@@ -439,6 +442,8 @@ export default class PlayController {
   }
 
   async prefetch(track: QueueItem) {
+    // Cancel any ongoing prefetch
+    this.#cancelPrefetch();
     const prefetchEnabled = yt2.getConfigValue('prefetch');
     if (!prefetchEnabled) {
       /**
@@ -446,27 +451,41 @@ export default class PlayController {
        * successful (such as inspecting the result of the function call) -
        * it just sets its internal state variable `prefetchDone`
        * to `true`. This results in the next track being skipped in cases
-       * where prefetch is not performed or fails. So when we want to signal
-       * that prefetch is not done, we would have to directly falsify the
-       * statemachine's `prefetchDone` variable.
+       * where prefetch is not performed or fails. So we set statemachine's
+       * `prefetchDone` variable to `false` and only set it to `true` when
+       * prefetch is successful.
        */
       yt2.getLogger().info('[youtube2-play] Prefetch disabled');
       yt2.getStateMachine().prefetchDone = false;
       return;
     }
     let streamUrl;
+    // Only set `prefetchDone` to `true` on success.
+    // Volumio gives us 5 seconds to prefetch before going to next song,
+    // setting this to `false` will make it play next track without prefetch
+    // - this can happen if prefetch fails or takes too long.
+    yt2.getStateMachine().prefetchDone = false;
+    this.#prefetchAborter = new AbortController();
+    const signal = this.#prefetchAborter.signal;
     try {
-      const { videoId, info: playbackInfo } = await PlayController.getPlaybackInfoFromUri(track.uri);
+      const { videoId, info: playbackInfo } = await PlayController.getPlaybackInfoFromUri(track.uri, signal);
       streamUrl = playbackInfo?.stream?.url;
       if (!streamUrl || !playbackInfo) {
         throw Error(`Stream not found for videoId '${videoId}'`);
       }
       this.#updateTrackWithPlaybackInfo(track, playbackInfo);
+      yt2.getStateMachine().prefetchDone = true;
     }
     catch (error: any) {
+      if (signal.aborted) {
+        yt2.getLogger().info(`[youtube2-play] Prefetch aborted: ${track.name}`);
+        return;
+      }
       yt2.getLogger().error(`[youtube2-play] Prefetch failed: ${error}`);
-      yt2.getStateMachine().prefetchDone = false;
       return;
+    }
+    finally {
+      this.#prefetchAborter = null;
     }
 
     const mpdPlugin = this.#mpdPlugin;
@@ -480,6 +499,13 @@ export default class PlayController {
     this.#prefetchPlaybackStateFixer?.notifyPrefetched(track);
 
     return res;
+  }
+
+  #cancelPrefetch() {
+    if (this.#prefetchAborter) {
+      this.#prefetchAborter.abort();
+      this.#prefetchAborter = null;
+    }
   }
 }
 

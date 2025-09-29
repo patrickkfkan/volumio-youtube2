@@ -16,7 +16,7 @@ export default class PlayController {
     seek(position: number): any;
     next(): any;
     previous(): any;
-    static getPlaybackInfoFromUri(uri: string): Promise<{
+    static getPlaybackInfoFromUri(uri: string, signal?: AbortSignal): Promise<{
         videoId: string;
         info: VideoPlaybackInfo | null;
     }>;

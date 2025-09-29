@@ -36,7 +36,7 @@ var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-var _PlayController_instances, _PlayController_mpdPlugin, _PlayController_autoplayListener, _PlayController_lastPlaybackInfo, _PlayController_prefetchPlaybackStateFixer, _PlayController_addAutoplayListener, _PlayController_removeAutoplayListener, _PlayController_updateTrackWithPlaybackInfo, _PlayController_doPlay, _PlayController_appendTrackTypeToStreamUrl, _PlayController_mpdAddTags, _PlayController_handleAutoplay, _PlayController_findLastPlayedTrackQueueIndex, _PlayController_getAutoplayItems, _PrefetchPlaybackStateFixer_instances, _PrefetchPlaybackStateFixer_positionAtPrefetch, _PrefetchPlaybackStateFixer_prefetchedTrack, _PrefetchPlaybackStateFixer_volumioPushStateListener, _PrefetchPlaybackStateFixer_addPushStateListener, _PrefetchPlaybackStateFixer_removePushStateListener, _PrefetchPlaybackStateFixer_handleVolumioPushState;
+var _PlayController_instances, _PlayController_mpdPlugin, _PlayController_autoplayListener, _PlayController_lastPlaybackInfo, _PlayController_prefetchPlaybackStateFixer, _PlayController_prefetchAborter, _PlayController_addAutoplayListener, _PlayController_removeAutoplayListener, _PlayController_updateTrackWithPlaybackInfo, _PlayController_doPlay, _PlayController_appendTrackTypeToStreamUrl, _PlayController_mpdAddTags, _PlayController_handleAutoplay, _PlayController_findLastPlayedTrackQueueIndex, _PlayController_getAutoplayItems, _PlayController_cancelPrefetch, _PrefetchPlaybackStateFixer_instances, _PrefetchPlaybackStateFixer_positionAtPrefetch, _PrefetchPlaybackStateFixer_prefetchedTrack, _PrefetchPlaybackStateFixer_volumioPushStateListener, _PrefetchPlaybackStateFixer_addPushStateListener, _PrefetchPlaybackStateFixer_removePushStateListener, _PrefetchPlaybackStateFixer_handleVolumioPushState;
 Object.defineProperty(exports, "__esModule", { value: true });
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
@@ -56,12 +56,14 @@ class PlayController {
         _PlayController_autoplayListener.set(this, void 0);
         _PlayController_lastPlaybackInfo.set(this, void 0);
         _PlayController_prefetchPlaybackStateFixer.set(this, void 0);
+        _PlayController_prefetchAborter.set(this, void 0);
         __classPrivateFieldSet(this, _PlayController_mpdPlugin, YouTube2Context_1.default.getMpdPlugin(), "f");
         __classPrivateFieldSet(this, _PlayController_autoplayListener, null, "f");
         __classPrivateFieldSet(this, _PlayController_prefetchPlaybackStateFixer, new PrefetchPlaybackStateFixer(), "f");
         __classPrivateFieldGet(this, _PlayController_prefetchPlaybackStateFixer, "f").on('playPrefetch', (info) => {
             __classPrivateFieldSet(this, _PlayController_lastPlaybackInfo, info, "f");
         });
+        __classPrivateFieldSet(this, _PlayController_prefetchAborter, null, "f");
     }
     reset() {
         __classPrivateFieldGet(this, _PlayController_instances, "m", _PlayController_removeAutoplayListener).call(this);
@@ -75,6 +77,7 @@ class PlayController {
      */
     async clearAddPlayTrack(track) {
         YouTube2Context_1.default.getLogger().info(`[youtube2-play] clearAddPlayTrack: ${track.uri}`);
+        __classPrivateFieldGet(this, _PlayController_instances, "m", _PlayController_cancelPrefetch).call(this);
         __classPrivateFieldGet(this, _PlayController_prefetchPlaybackStateFixer, "f")?.notifyPrefetchCleared();
         const { videoId, info: playbackInfo } = await PlayController.getPlaybackInfoFromUri(track.uri);
         if (!playbackInfo) {
@@ -145,7 +148,7 @@ class PlayController {
         YouTube2Context_1.default.getStateMachine().setConsumeUpdateService(undefined);
         return YouTube2Context_1.default.getStateMachine().previous();
     }
-    static async getPlaybackInfoFromUri(uri) {
+    static async getPlaybackInfoFromUri(uri, signal) {
         const watchEndpoint = ExplodeHelper_1.default.getExplodedTrackInfoFromUri(uri)?.endpoint;
         const videoId = watchEndpoint?.payload?.videoId;
         if (!videoId) {
@@ -154,7 +157,7 @@ class PlayController {
         const model = model_1.default.getInstance(model_1.ModelType.Video);
         return {
             videoId,
-            info: await model.getPlaybackInfo(videoId)
+            info: await model.getPlaybackInfo(videoId, undefined, signal)
         };
     }
     async getGotoUri(type, uri) {
@@ -196,6 +199,8 @@ class PlayController {
         return null;
     }
     async prefetch(track) {
+        // Cancel any ongoing prefetch
+        __classPrivateFieldGet(this, _PlayController_instances, "m", _PlayController_cancelPrefetch).call(this);
         const prefetchEnabled = YouTube2Context_1.default.getConfigValue('prefetch');
         if (!prefetchEnabled) {
             /**
@@ -203,27 +208,41 @@ class PlayController {
              * successful (such as inspecting the result of the function call) -
              * it just sets its internal state variable `prefetchDone`
              * to `true`. This results in the next track being skipped in cases
-             * where prefetch is not performed or fails. So when we want to signal
-             * that prefetch is not done, we would have to directly falsify the
-             * statemachine's `prefetchDone` variable.
+             * where prefetch is not performed or fails. So we set statemachine's
+             * `prefetchDone` variable to `false` and only set it to `true` when
+             * prefetch is successful.
              */
             YouTube2Context_1.default.getLogger().info('[youtube2-play] Prefetch disabled');
             YouTube2Context_1.default.getStateMachine().prefetchDone = false;
             return;
         }
         let streamUrl;
+        // Only set `prefetchDone` to `true` on success.
+        // Volumio gives us 5 seconds to prefetch before going to next song,
+        // setting this to `false` will make it play next track without prefetch
+        // - this can happen if prefetch fails or takes too long.
+        YouTube2Context_1.default.getStateMachine().prefetchDone = false;
+        __classPrivateFieldSet(this, _PlayController_prefetchAborter, new AbortController(), "f");
+        const signal = __classPrivateFieldGet(this, _PlayController_prefetchAborter, "f").signal;
         try {
-            const { videoId, info: playbackInfo } = await PlayController.getPlaybackInfoFromUri(track.uri);
+            const { videoId, info: playbackInfo } = await PlayController.getPlaybackInfoFromUri(track.uri, signal);
             streamUrl = playbackInfo?.stream?.url;
             if (!streamUrl || !playbackInfo) {
                 throw Error(`Stream not found for videoId '${videoId}'`);
             }
             __classPrivateFieldGet(this, _PlayController_instances, "m", _PlayController_updateTrackWithPlaybackInfo).call(this, track, playbackInfo);
+            YouTube2Context_1.default.getStateMachine().prefetchDone = true;
         }
         catch (error) {
+            if (signal.aborted) {
+                YouTube2Context_1.default.getLogger().info(`[youtube2-play] Prefetch aborted: ${track.name}`);
+                return;
+            }
             YouTube2Context_1.default.getLogger().error(`[youtube2-play] Prefetch failed: ${error}`);
-            YouTube2Context_1.default.getStateMachine().prefetchDone = false;
             return;
+        }
+        finally {
+            __classPrivateFieldSet(this, _PlayController_prefetchAborter, null, "f");
         }
         const mpdPlugin = __classPrivateFieldGet(this, _PlayController_mpdPlugin, "f");
         const res = await (0, util_1.kewToJSPromise)(mpdPlugin.sendMpdCommand(`addid "${__classPrivateFieldGet(this, _PlayController_instances, "m", _PlayController_appendTrackTypeToStreamUrl).call(this, streamUrl)}"`, [])
@@ -236,7 +255,7 @@ class PlayController {
         return res;
     }
 }
-_PlayController_mpdPlugin = new WeakMap(), _PlayController_autoplayListener = new WeakMap(), _PlayController_lastPlaybackInfo = new WeakMap(), _PlayController_prefetchPlaybackStateFixer = new WeakMap(), _PlayController_instances = new WeakSet(), _PlayController_addAutoplayListener = function _PlayController_addAutoplayListener() {
+_PlayController_mpdPlugin = new WeakMap(), _PlayController_autoplayListener = new WeakMap(), _PlayController_lastPlaybackInfo = new WeakMap(), _PlayController_prefetchPlaybackStateFixer = new WeakMap(), _PlayController_prefetchAborter = new WeakMap(), _PlayController_instances = new WeakSet(), _PlayController_addAutoplayListener = function _PlayController_addAutoplayListener() {
     if (!__classPrivateFieldGet(this, _PlayController_autoplayListener, "f")) {
         __classPrivateFieldSet(this, _PlayController_autoplayListener, () => {
             __classPrivateFieldGet(this, _PlayController_mpdPlugin, "f").getState().then((state) => {
@@ -435,6 +454,11 @@ _PlayController_mpdPlugin = new WeakMap(), _PlayController_autoplayListener = ne
         return autoplayItems.map((item) => ExplodeHelper_1.default.createQueueItemFromExplodedTrackInfo(item));
     }
     return [];
+}, _PlayController_cancelPrefetch = function _PlayController_cancelPrefetch() {
+    if (__classPrivateFieldGet(this, _PlayController_prefetchAborter, "f")) {
+        __classPrivateFieldGet(this, _PlayController_prefetchAborter, "f").abort();
+        __classPrivateFieldSet(this, _PlayController_prefetchAborter, null, "f");
+    }
 };
 exports.default = PlayController;
 /**
