@@ -1,4 +1,4 @@
-import { YTNodes, type Helpers as YTHelpers } from 'volumio-youtubei.js';
+import { YTNodes, type Helpers as YTHelpers } from 'volumio-yt-support/dist/innertube';
 import { BaseModel } from './BaseModel';
 import InnertubeResultParser from './InnertubeResultParser';
 import { type ContentItem, type PageElement } from '../types';

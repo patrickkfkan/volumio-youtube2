@@ -1,5 +1,5 @@
+import { Innertube } from 'volumio-yt-support/dist/innertube';
 import { type PluginConfig } from '../types';
-import type Innertube from "volumio-youtubei.js";
 export type AccountInfo = {
     isSignedIn: true;
     list: PluginConfig.Account[];

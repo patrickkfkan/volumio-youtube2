@@ -1,4 +1,4 @@
-import { type Types } from 'volumio-youtubei.js';
+import { type Types } from 'volumio-yt-support/dist/innertube';
 import type VideoPlaybackInfo from '../types/VideoPlaybackInfo';
 import { BaseModel } from './BaseModel';
 export default class VideoModel extends BaseModel {

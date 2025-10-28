@@ -7,8 +7,10 @@ exports.BaseModel = void 0;
 const InnertubeLoader_1 = __importDefault(require("./InnertubeLoader"));
 const YouTube2Context_1 = __importDefault(require("../YouTube2Context"));
 class BaseModel {
-    getInnertube() {
-        return InnertubeLoader_1.default.getInstance();
+    async getInnertube() {
+        return {
+            innertube: await (await InnertubeLoader_1.default.getInstance()).getInnertube()
+        };
     }
     async fetchAccountMenu() {
         const { innertube } = await this.getInnertube();

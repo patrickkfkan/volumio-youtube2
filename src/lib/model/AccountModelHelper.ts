@@ -1,6 +1,5 @@
-import { type YTNodes } from 'volumio-youtubei.js';
+import { Innertube, type YTNodes } from 'volumio-yt-support/dist/innertube';
 import { type PluginConfig } from '../types';
-import type Innertube from "volumio-youtubei.js";
 import InnertubeResultParser from './InnertubeResultParser';
 
 export type AccountInfo = {

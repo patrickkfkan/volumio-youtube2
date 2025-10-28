@@ -9,10 +9,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 var _VideoModel_instances, _VideoModel_sleep, _VideoModel_head, _VideoModel_chooseFormat, _VideoModel_parseStreamData, _VideoModel_getStreamUrlFromHLS;
 Object.defineProperty(exports, "__esModule", { value: true });
-const volumio_youtubei_js_1 = require("volumio-youtubei.js");
+const innertube_1 = require("volumio-yt-support/dist/innertube");
 const YouTube2Context_1 = __importDefault(require("../YouTube2Context"));
 const BaseModel_1 = require("./BaseModel");
 const InnertubeResultParser_1 = __importDefault(require("./InnertubeResultParser"));
+const InnertubeLoader_1 = __importDefault(require("./InnertubeLoader"));
 // https://gist.github.com/sidneys/7095afe4da4ae58694d128b1034e01e2
 const ITAG_TO_BITRATE = {
     '139': '48',
@@ -36,11 +37,20 @@ class VideoModel extends BaseModel_1.BaseModel {
     async getPlaybackInfo(videoId, client, signal) {
         const { innertube } = await this.getInnertube();
         try {
-            const info = await innertube.getBasicInfo(videoId, { client });
+            client = client ?? 'WEB';
+            const contentPoToken = (await InnertubeLoader_1.default.generatePoToken(videoId)).poToken;
+            YouTube2Context_1.default.getLogger().info(`[ytmusic] Obtained PO token for video #${videoId}: ${contentPoToken}`);
+            const info = await innertube.getBasicInfo(videoId, { client, po_token: contentPoToken });
             if (signal?.aborted) {
                 throw Error('Aborted');
             }
             const basicInfo = info.basic_info;
+            if (!basicInfo.is_live &&
+                client === 'WEB') {
+                // For non-live videos, WEB client returns SABR streams which Innertube can't decipher.
+                // We need to switch to WEB_EMBEDDED client wih TV as fallback.
+                return this.getPlaybackInfo(videoId, 'WEB_EMBEDDED', signal);
+            }
             const result = {
                 type: 'video',
                 title: basicInfo.title,
@@ -61,7 +71,7 @@ class VideoModel extends BaseModel_1.BaseModel {
                 if (info.has_trailer) {
                     const trailerInfo = info.getTrailerInfo();
                     if (trailerInfo) {
-                        result.stream = __classPrivateFieldGet(this, _VideoModel_instances, "m", _VideoModel_chooseFormat).call(this, innertube, trailerInfo);
+                        result.stream = await __classPrivateFieldGet(this, _VideoModel_instances, "m", _VideoModel_chooseFormat).call(this, innertube, trailerInfo);
                     }
                 }
                 else {
@@ -70,14 +80,13 @@ class VideoModel extends BaseModel_1.BaseModel {
             }
             else if (!result.isLive) {
                 try {
-                    result.stream = __classPrivateFieldGet(this, _VideoModel_instances, "m", _VideoModel_chooseFormat).call(this, innertube, info);
+                    result.stream = await __classPrivateFieldGet(this, _VideoModel_instances, "m", _VideoModel_chooseFormat).call(this, innertube, info);
                 }
                 catch (error) {
-                    if (error instanceof volumio_youtubei_js_1.Utils.PlayerError && client !== 'WEB_EMBEDDED') {
-                        // Sometimes with default client we fail to get the stream because format is missing url / cipher, leading to 
-                        // "No valid URL to decipher" error. In this case, we retry with 'WEB_EMBEDDED' client.
-                        YouTube2Context_1.default.getLogger().warn(`[youtube2] Error getting stream with default client in VideoModel.getInfo(${videoId}): ${error.message} - retry with 'WEB_EMBEDDED' client.`);
-                        return await this.getPlaybackInfo(videoId, 'WEB_EMBEDDED');
+                    if (error instanceof innertube_1.Utils.PlayerError && client !== 'TV') {
+                        // Error with WEB_EMBEDDED client - retry with TV
+                        YouTube2Context_1.default.getLogger().warn(`[youtube2] Error getting stream with ${client} client in VideoModel.getInfo(${videoId}): ${error.message} - retry with 'TV' client.`);
+                        return await this.getPlaybackInfo(videoId, 'TV', signal);
                     }
                     throw error;
                 }
@@ -86,6 +95,14 @@ class VideoModel extends BaseModel_1.BaseModel {
                 const hlsManifestUrl = info.streaming_data?.hls_manifest_url;
                 const streamUrlFromHLS = hlsManifestUrl ? await __classPrivateFieldGet(this, _VideoModel_instances, "m", _VideoModel_getStreamUrlFromHLS).call(this, hlsManifestUrl, YouTube2Context_1.default.getConfigValue('liveStreamQuality')) : null;
                 result.stream = streamUrlFromHLS ? { url: streamUrlFromHLS } : null;
+            }
+            if (result.stream && !result.isLive) {
+                // Innertube sets `pot` searchParam of URL to session-bound PO token.
+                // Seems YT now requires `pot` to be the *content-bound* token, otherwise we'll get 403.
+                // See: https://github.com/TeamNewPipe/NewPipeExtractor/issues/1392
+                const urlObj = new URL(result.stream.url);
+                urlObj.searchParams.set('pot', contentPoToken);
+                result.stream.url = urlObj.toString();
             }
             // Might need to wait a few seconds before stream becomes accessible (instead of getting 403 Forbidden).
             // We add a test routine here and sleep for a while between retries
@@ -133,9 +150,9 @@ _VideoModel_instances = new WeakSet(), _VideoModel_sleep = function _VideoModel_
         status: res.status,
         statusText: res.statusText
     };
-}, _VideoModel_chooseFormat = function _VideoModel_chooseFormat(innertube, videoInfo) {
+}, _VideoModel_chooseFormat = async function _VideoModel_chooseFormat(innertube, videoInfo) {
     const format = videoInfo?.chooseFormat(BEST_AUDIO_FORMAT);
-    const streamUrl = format ? format.decipher(innertube.session.player) : null;
+    const streamUrl = format ? await format.decipher(innertube.session.player) : null;
     const streamData = format ? { ...format, url: streamUrl } : null;
     return __classPrivateFieldGet(this, _VideoModel_instances, "m", _VideoModel_parseStreamData).call(this, streamData);
 }, _VideoModel_parseStreamData = function _VideoModel_parseStreamData(data) {

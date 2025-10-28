@@ -1,4 +1,4 @@
-import { Misc as YTMisc } from 'volumio-youtubei.js';
+import { Misc as YTMisc } from 'volumio-yt-support/dist/innertube';
 import { EndpointType } from '../types/Endpoint';
 import { BaseModel } from './BaseModel';
 import InnertubeResultParser from './InnertubeResultParser';

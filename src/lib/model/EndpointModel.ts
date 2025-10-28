@@ -1,6 +1,5 @@
-import {type InnertubeEndpoint} from 'volumio-youtubei.js';
-import type Innertube from 'volumio-youtubei.js';
-import { Parser } from 'volumio-youtubei.js';
+import {Innertube, type InnertubeEndpoint} from 'volumio-yt-support/dist/innertube';
+import { Parser } from 'volumio-yt-support/dist/innertube';
 import { BaseModel } from './BaseModel';
 import type Endpoint from '../types/Endpoint';
 import { EndpointType } from '../types/Endpoint';

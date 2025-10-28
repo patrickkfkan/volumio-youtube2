@@ -13,8 +13,8 @@ declare class ControllerYouTube2 implements NowPlayingPluginSupport {
     onStart(): any;
     onStop(): any;
     getConfigurationFiles(): string[];
-    configSaveI18n(data: any): void;
-    configSaveAccount(data: any): void;
+    configSaveI18n(data: any): Promise<void>;
+    configSaveAccount(data: any): Promise<void>;
     configSaveBrowse(data: any): void;
     configSavePlayback(data: any): void;
     configEnableAddToHistory(): void;

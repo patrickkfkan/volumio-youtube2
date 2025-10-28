@@ -4,7 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PLUGIN_CONFIG_SCHEMA = void 0;
-const volumio_youtubei_js_1 = require("volumio-youtubei.js");
+const innertube_1 = require("volumio-yt-support/dist/innertube");
 const YouTube2Context_1 = __importDefault(require("../YouTube2Context"));
 const util_1 = require("../util");
 const BaseModel_1 = require("./BaseModel");
@@ -46,7 +46,7 @@ class ConfigModel extends BaseModel_1.BaseModel {
             };
         };
         const __parseMenu = (contents, targetSelectCommandKey, targetCodeProp) => {
-            const header = volumio_youtubei_js_1.Parser.parseItem(contents.header);
+            const header = innertube_1.Parser.parseItem(contents.header);
             let label = null;
             if (header?.hasKey('title')) {
                 label = InnertubeResultParser_1.default.unwrap(header.title);
@@ -55,8 +55,8 @@ class ConfigModel extends BaseModel_1.BaseModel {
                 return key === 'compactLinkRenderer' && value.serviceEndpoint?.signalServiceEndpoint?.actions?.find((action) => action[targetSelectCommandKey]);
             });
             const optionValues = menuItems.reduce((ov, item) => {
-                const label = InnertubeResultParser_1.default.unwrap(new volumio_youtubei_js_1.Misc.Text(item.title));
-                const value = new volumio_youtubei_js_1.YTNodes.NavigationEndpoint(item.serviceEndpoint)?.payload?.actions?.find((action) => action[targetSelectCommandKey])?.[targetSelectCommandKey]?.[targetCodeProp];
+                const label = InnertubeResultParser_1.default.unwrap(new innertube_1.Misc.Text(item.title));
+                const value = new innertube_1.YTNodes.NavigationEndpoint(item.serviceEndpoint)?.payload?.actions?.find((action) => action[targetSelectCommandKey])?.[targetSelectCommandKey]?.[targetCodeProp];
                 if (label && value) {
                     ov.push({ label, value });
                 }

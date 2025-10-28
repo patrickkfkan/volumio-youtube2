@@ -17,7 +17,7 @@ import ViewHelper from './lib/controller/browse/view-handlers/ViewHelper';
 import InnertubeLoader from './lib/model/InnertubeLoader';
 import { type NowPlayingPluginSupport } from 'now-playing-common';
 import YouTube2NowPlayingMetadataProvider from './lib/util/YouTube2NowPlayingMetadataProvider';
-import { Parser } from 'volumio-youtubei.js';
+import { Parser } from 'volumio-yt-support/dist/innertube';
 
 interface GotoParams extends QueueItem {
   type: 'album' | 'artist';
@@ -176,8 +176,10 @@ class ControllerYouTube2 implements NowPlayingPluginSupport {
 
     this.#nowPlayingMetadataProvider = null;
 
-    InnertubeLoader.reset();
-    yt2.reset();
+    return jsPromiseToKew(
+      InnertubeLoader.reset()
+        .then(() => yt2.reset())
+      );
 
     return libQ.resolve();
   }
@@ -229,7 +231,7 @@ class ControllerYouTube2 implements NowPlayingPluginSupport {
     }
   }
 
-  configSaveI18n(data: any) {
+  async configSaveI18n(data: any) {
     const oldRegion = yt2.hasConfigKey('region') ? yt2.getConfigValue('region') : null;
     const oldLanguage = yt2.hasConfigKey('language') ? yt2.getConfigValue('language') : null;
     const region = data.region.value;
@@ -239,7 +241,7 @@ class ControllerYouTube2 implements NowPlayingPluginSupport {
       yt2.setConfigValue('region', region);
       yt2.setConfigValue('language', language);
 
-      InnertubeLoader.applyI18nConfig();
+      await InnertubeLoader.applyI18nConfig();
       Model.getInstance(ModelType.Config).clearCache();
       yt2.refreshUIConfig();
     }
@@ -247,7 +249,7 @@ class ControllerYouTube2 implements NowPlayingPluginSupport {
     yt2.toast('success', yt2.getI18n('YOUTUBE2_SETTINGS_SAVED'));
   }
 
-  configSaveAccount(data: any) {
+  async configSaveAccount(data: any) {
     const oldCookie = yt2.hasConfigKey('cookie') ? yt2.getConfigValue('cookie') : null;
     const cookie = data.cookie?.trim();
     const oldActiveChannelHandle = yt2.getConfigValue('activeChannelHandle');
@@ -264,7 +266,7 @@ class ControllerYouTube2 implements NowPlayingPluginSupport {
     }
     yt2.toast('success', yt2.getI18n('YOUTUBE2_SETTINGS_SAVED'));
     if (resetInnertube) {
-      InnertubeLoader.reset();
+      await InnertubeLoader.reset();
       yt2.refreshUIConfig();
     }
   }

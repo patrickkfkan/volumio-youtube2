@@ -9,7 +9,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 var _AccountModel_instances, _AccountModel_getChannelInfo;
 Object.defineProperty(exports, "__esModule", { value: true });
-const volumio_youtubei_js_1 = require("volumio-youtubei.js");
+const innertube_1 = require("volumio-yt-support/dist/innertube");
 const Endpoint_1 = require("../types/Endpoint");
 const BaseModel_1 = require("./BaseModel");
 const InnertubeResultParser_1 = __importDefault(require("./InnertubeResultParser"));
@@ -36,7 +36,7 @@ _AccountModel_instances = new WeakSet(), _AccountModel_getChannelInfo = async fu
     const menu = await this.fetchAccountMenu();
     const title = (0, util_1.findInObject)(menu, (key) => key === 'manageAccountTitle')[0];
     if (title) {
-        const text = new volumio_youtubei_js_1.Misc.Text(title);
+        const text = new innertube_1.Misc.Text(title);
         const endpoint = InnertubeResultParser_1.default.parseEndpoint(text.endpoint, Endpoint_1.EndpointType.Browse);
         if (text.text && endpoint?.payload.browseId.startsWith('UC')) {
             return {

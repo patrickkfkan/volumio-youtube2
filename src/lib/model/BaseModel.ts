@@ -3,8 +3,10 @@ import yt2 from '../YouTube2Context';
 
 export abstract class BaseModel {
 
-  protected getInnertube() {
-    return InnertubeLoader.getInstance();
+  protected async getInnertube() {
+    return {
+      innertube: await (await InnertubeLoader.getInstance()).getInnertube()
+    };
   }
 
   protected async fetchAccountMenu() {

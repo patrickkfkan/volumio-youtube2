@@ -1,12 +1,9 @@
-import Innertube from 'volumio-youtubei.js';
-export interface InnertubeLoaderGetInstanceResult {
-    innertube: Innertube;
-}
+import { InnertubeWrapper, type PotFnResult } from 'volumio-yt-support';
 export default class InnertubeLoader {
     #private;
-    static getInstance(): Promise<InnertubeLoaderGetInstanceResult>;
-    static reset(): void;
-    static hasInstance(): boolean;
-    static applyI18nConfig(): void;
+    static getInstance(): Promise<InnertubeWrapper>;
+    static generatePoToken(identifier: string): Promise<PotFnResult>;
+    static reset(): Promise<void>;
+    static applyI18nConfig(): Promise<void>;
 }
 //# sourceMappingURL=InnertubeLoader.d.ts.map

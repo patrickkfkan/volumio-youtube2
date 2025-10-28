@@ -1,9 +1,9 @@
-import {type YT, type Types, Utils} from 'volumio-youtubei.js';
-import type Innertube from 'volumio-youtubei.js';
+import {type YT, type Types, Utils, Innertube} from 'volumio-yt-support/dist/innertube';
 import yt2 from '../YouTube2Context';
 import type VideoPlaybackInfo from '../types/VideoPlaybackInfo';
 import { BaseModel } from './BaseModel';
 import InnertubeResultParser from './InnertubeResultParser';
+import InnertubeLoader from './InnertubeLoader';
 
 // https://gist.github.com/sidneys/7095afe4da4ae58694d128b1034e01e2
 const ITAG_TO_BITRATE: Record<string, string> = {
@@ -33,11 +33,24 @@ export default class VideoModel extends BaseModel {
     const { innertube } = await this.getInnertube();
 
     try {
-      const info = await innertube.getBasicInfo(videoId, { client });
+      client = client ?? 'WEB';
+
+      const contentPoToken = (await InnertubeLoader.generatePoToken(videoId)).poToken;
+      yt2.getLogger().info(`[ytmusic] Obtained PO token for video #${videoId}: ${contentPoToken}`);
+
+      const info = await innertube.getBasicInfo(videoId, { client, po_token: contentPoToken });
       if (signal?.aborted) {
         throw Error('Aborted');
       }
       const basicInfo = info.basic_info;
+
+      if (!basicInfo.is_live &&
+        client === 'WEB'
+      ) {
+        // For non-live videos, WEB client returns SABR streams which Innertube can't decipher.
+        // We need to switch to WEB_EMBEDDED client wih TV as fallback.
+        return this.getPlaybackInfo(videoId, 'WEB_EMBEDDED', signal);
+      }
 
       const result: VideoPlaybackInfo = {
         type: 'video',
@@ -60,7 +73,7 @@ export default class VideoModel extends BaseModel {
         if (info.has_trailer) {
           const trailerInfo = info.getTrailerInfo();
           if (trailerInfo) {
-            result.stream = this.#chooseFormat(innertube, trailerInfo);
+            result.stream = await this.#chooseFormat(innertube, trailerInfo);
           }
         }
         else {
@@ -69,14 +82,13 @@ export default class VideoModel extends BaseModel {
       }
       else if (!result.isLive) {
         try {
-          result.stream = this.#chooseFormat(innertube, info);
+          result.stream = await this.#chooseFormat(innertube, info);
         }
         catch (error) {
-          if (error instanceof Utils.PlayerError && client !== 'WEB_EMBEDDED') {
-            // Sometimes with default client we fail to get the stream because format is missing url / cipher, leading to 
-            // "No valid URL to decipher" error. In this case, we retry with 'WEB_EMBEDDED' client.
-            yt2.getLogger().warn(`[youtube2] Error getting stream with default client in VideoModel.getInfo(${videoId}): ${error.message} - retry with 'WEB_EMBEDDED' client.`);
-            return await this.getPlaybackInfo(videoId, 'WEB_EMBEDDED');
+          if (error instanceof Utils.PlayerError && client !== 'TV') {
+            // Error with WEB_EMBEDDED client - retry with TV
+            yt2.getLogger().warn(`[youtube2] Error getting stream with ${client} client in VideoModel.getInfo(${videoId}): ${error.message} - retry with 'TV' client.`);
+            return await this.getPlaybackInfo(videoId, 'TV', signal);
           }
           throw error;
         }
@@ -85,6 +97,15 @@ export default class VideoModel extends BaseModel {
         const hlsManifestUrl = info.streaming_data?.hls_manifest_url;
         const streamUrlFromHLS = hlsManifestUrl ? await this.#getStreamUrlFromHLS(hlsManifestUrl, yt2.getConfigValue('liveStreamQuality')) : null;
         result.stream = streamUrlFromHLS ? { url: streamUrlFromHLS } : null;
+      }
+
+      if (result.stream && !result.isLive) {
+        // Innertube sets `pot` searchParam of URL to session-bound PO token.
+        // Seems YT now requires `pot` to be the *content-bound* token, otherwise we'll get 403.
+        // See: https://github.com/TeamNewPipe/NewPipeExtractor/issues/1392
+        const urlObj = new URL(result.stream.url);
+        urlObj.searchParams.set('pot', contentPoToken);
+        result.stream.url = urlObj.toString();
       }
 
       // Might need to wait a few seconds before stream becomes accessible (instead of getting 403 Forbidden).
@@ -139,9 +160,9 @@ export default class VideoModel extends BaseModel {
     };
   }
 
-  #chooseFormat(innertube: Innertube, videoInfo: YT.VideoInfo): VideoPlaybackInfo['stream'] | null {
+  async #chooseFormat(innertube: Innertube, videoInfo: YT.VideoInfo): Promise<VideoPlaybackInfo['stream'] | null> {
     const format = videoInfo?.chooseFormat(BEST_AUDIO_FORMAT);
-    const streamUrl = format ? format.decipher(innertube.session.player) : null;
+    const streamUrl = format ? await format.decipher(innertube.session.player) : null;
     const streamData = format ? { ...format, url: streamUrl } : null;
     return this.#parseStreamData(streamData);
   }

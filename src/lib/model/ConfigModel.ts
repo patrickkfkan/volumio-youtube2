@@ -1,4 +1,4 @@
-import { Parser, type RawNode, YTNodes, Misc as YTMisc } from 'volumio-youtubei.js';
+import { Parser, type RawNode, YTNodes, Misc as YTMisc } from 'volumio-yt-support/dist/innertube';
 import yt2 from '../YouTube2Context';
 import { findInObject } from '../util';
 import { BaseModel } from './BaseModel';

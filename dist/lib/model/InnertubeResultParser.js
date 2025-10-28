@@ -9,7 +9,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 var _a, _InnertubeResultParser_parseWatchContinuationEndpointResult, _InnertubeResultParser_parseWatchEndpointResult, _InnertubeResultParser_parseSearchEndpointResult, _InnertubeResultParser_parseBrowseEndpointResult, _InnertubeResultParser_parseHeader, _InnertubeResultParser_parseContentToSection, _InnertubeResultParser_parseContentItem, _InnertubeResultParser_parseAuthor, _InnertubeResultParser_parseDuration, _InnertubeResultParser_parseContinuationItem, _InnertubeResultParser_parseButton;
 Object.defineProperty(exports, "__esModule", { value: true });
-const volumio_youtubei_js_1 = require("volumio-youtubei.js");
+const innertube_1 = require("volumio-yt-support/dist/innertube");
 const Endpoint_1 = require("../types/Endpoint");
 const EndpointHelper_1 = __importDefault(require("../util/EndpointHelper"));
 class InnertubeResultParser {
@@ -42,7 +42,7 @@ class InnertubeResultParser {
             }
             return data;
         }
-        else if (typeof data === 'string' || data instanceof volumio_youtubei_js_1.Misc.Text) {
+        else if (typeof data === 'string' || data instanceof innertube_1.Misc.Text) {
             const s = (typeof data === 'string') ? data : data.toString();
             return (s === 'N/A' || s === '') ? null : s;
         }
@@ -175,7 +175,7 @@ class InnertubeResultParser {
 _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpointResult = function _InnertubeResultParser_parseWatchContinuationEndpointResult(data) {
     const itemContinuations = data.on_response_received_endpoints || null;
     if (itemContinuations && itemContinuations.length > 0) {
-        const actions = itemContinuations.filter((c) => c.is(volumio_youtubei_js_1.YTNodes.AppendContinuationItemsAction));
+        const actions = itemContinuations.filter((c) => c.is(innertube_1.YTNodes.AppendContinuationItemsAction));
         if (actions) {
             const acItems = actions.reduce((result, ac) => {
                 if (ac.contents) {
@@ -195,7 +195,7 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
                 isContinuation: true,
                 items: parsedItems
             };
-            const continuationItem = acItems.find((item) => item.is(volumio_youtubei_js_1.YTNodes.ContinuationItem))?.as(volumio_youtubei_js_1.YTNodes.ContinuationItem);
+            const continuationItem = acItems.find((item) => item.is(innertube_1.YTNodes.ContinuationItem))?.as(innertube_1.YTNodes.ContinuationItem);
             const parsedContinuation = continuationItem ? __classPrivateFieldGet(this, _a, "m", _InnertubeResultParser_parseContinuationItem).call(this, continuationItem, Endpoint_1.EndpointType.WatchContinuation) : null;
             if (parsedContinuation) {
                 watchContinuationContent.continuation = parsedContinuation;
@@ -210,7 +210,7 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
         return null;
     }
     const result = { type: 'watch', isContinuation: false };
-    if (!Array.isArray(dataContents) && dataContents.is(volumio_youtubei_js_1.YTNodes.TwoColumnWatchNextResults)) {
+    if (!Array.isArray(dataContents) && dataContents.is(innertube_1.YTNodes.TwoColumnWatchNextResults)) {
         // Playlist items
         const playlistData = dataContents.playlist;
         if (playlistData) {
@@ -241,14 +241,14 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
         // Related
         // - If user is signed out, related items appear directly under secondary_results
         // - If user is signed in, related items appear in ItemSection under secondary_results
-        const itemSection = dataContents.secondary_results.firstOfType(volumio_youtubei_js_1.YTNodes.ItemSection);
+        const itemSection = dataContents.secondary_results.firstOfType(innertube_1.YTNodes.ItemSection);
         const relatedItemList = itemSection ? itemSection.contents : dataContents.secondary_results;
         if (relatedItemList) {
             const parsedItems = relatedItemList.map((item) => __classPrivateFieldGet(this, _a, "m", _InnertubeResultParser_parseContentItem).call(this, item));
             result.related = {
                 items: parsedItems.filter((item) => item?.type === 'video' || item?.type === 'playlist')
             };
-            const continuationItem = relatedItemList.find((item) => item.is(volumio_youtubei_js_1.YTNodes.ContinuationItem));
+            const continuationItem = relatedItemList.find((item) => item.is(innertube_1.YTNodes.ContinuationItem));
             const parsedContinuation = __classPrivateFieldGet(this, _a, "m", _InnertubeResultParser_parseContinuationItem).call(this, continuationItem, Endpoint_1.EndpointType.WatchContinuation);
             if (parsedContinuation) {
                 result.related.continuation = parsedContinuation;
@@ -262,8 +262,8 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
     if (!dataContents) {
         return null;
     }
-    if (!Array.isArray(dataContents) && dataContents.is(volumio_youtubei_js_1.YTNodes.TwoColumnSearchResults) && dataContents.primary_contents) {
-        return __classPrivateFieldGet(this, _a, "m", _InnertubeResultParser_parseBrowseEndpointResult).call(this, { contents: new volumio_youtubei_js_1.Helpers.SuperParsedResult(dataContents.primary_contents) });
+    if (!Array.isArray(dataContents) && dataContents.is(innertube_1.YTNodes.TwoColumnSearchResults) && dataContents.primary_contents) {
+        return __classPrivateFieldGet(this, _a, "m", _InnertubeResultParser_parseBrowseEndpointResult).call(this, { contents: new innertube_1.Helpers.SuperParsedResult(dataContents.primary_contents) });
     }
     return null;
 }, _InnertubeResultParser_parseBrowseEndpointResult = function _InnertubeResultParser_parseBrowseEndpointResult(data) {
@@ -271,8 +271,8 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
         data.on_response_received_endpoints ||
         data.on_response_received_commands || null;
     if (itemContinuations && itemContinuations.length > 0) {
-        const actionOrCommands = itemContinuations.filter((c) => c.is(volumio_youtubei_js_1.YTNodes.AppendContinuationItemsAction) ||
-            c.is(volumio_youtubei_js_1.ReloadContinuationItemsCommand));
+        const actionOrCommands = itemContinuations.filter((c) => c.is(innertube_1.YTNodes.AppendContinuationItemsAction) ||
+            c.is(innertube_1.ReloadContinuationItemsCommand));
         if (actionOrCommands) {
             const sections = actionOrCommands.reduce((sections, ac) => {
                 const parsedSection = __classPrivateFieldGet(this, _a, "m", _InnertubeResultParser_parseContentToSection).call(this, { content: this.unwrap(ac.contents) });
@@ -310,7 +310,7 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
     if (dataContents && !Array.isArray(dataContents) && dataContents.hasKey('tabs')) {
         const tabs = this.unwrap(dataContents.tabs);
         if (tabs && Array.isArray(tabs)) {
-            const reducedTabs = tabs.filter((tab) => !tab.is(volumio_youtubei_js_1.YTNodes.ExpandableTab))
+            const reducedTabs = tabs.filter((tab) => !tab.is(innertube_1.YTNodes.ExpandableTab))
                 .reduce((filtered, tab) => {
                 const tabEndpoint = this.parseEndpoint(tab.endpoint, Endpoint_1.EndpointType.Browse, Endpoint_1.EndpointType.BrowseContinuation, Endpoint_1.EndpointType.Search, Endpoint_1.EndpointType.SearchContinuation);
                 const tabTitle = this.unwrap(tab.title);
@@ -347,12 +347,12 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
         return null;
     }
     let type = null, title = null, subtitles = [], description = null, thumbnail = null, endpoint = null, author = null, shufflePlay = null;
-    if (data.is(volumio_youtubei_js_1.YTNodes.FeedTabbedHeader)) {
+    if (data.is(innertube_1.YTNodes.FeedTabbedHeader)) {
         type = 'feed';
         title = this.unwrap(data.title);
     }
     // Channel
-    else if (data.is(volumio_youtubei_js_1.YTNodes.C4TabbedHeader)) {
+    else if (data.is(innertube_1.YTNodes.C4TabbedHeader)) {
         type = 'channel';
         title = this.unwrap(data.author?.name);
         thumbnail = this.parseThumbnail(data.author?.thumbnails);
@@ -371,7 +371,7 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
         endpoint = this.parseEndpoint(data.author?.endpoint, Endpoint_1.EndpointType.Browse);
     }
     // E.g. Gaming channel
-    else if (data.is(volumio_youtubei_js_1.YTNodes.InteractiveTabbedHeader)) {
+    else if (data.is(innertube_1.YTNodes.InteractiveTabbedHeader)) {
         type = 'channel';
         title = this.unwrap(data.title);
         thumbnail = this.parseThumbnail(data.box_art);
@@ -382,7 +382,7 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
         description = this.unwrap(data.description);
     }
     // Playlist --> Seems to have been replaced with PageHeader, but leave it here for the time being.
-    else if (data.is(volumio_youtubei_js_1.YTNodes.PlaylistHeader)) {
+    else if (data.is(innertube_1.YTNodes.PlaylistHeader)) {
         type = 'playlist';
         title = this.unwrap(data.title);
         if (data.stats) {
@@ -419,8 +419,8 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
         }
     }
     // Topic
-    else if (data.is(volumio_youtubei_js_1.YTNodes.CarouselHeader)) {
-        const details = data.contents.find((header) => header.is(volumio_youtubei_js_1.YTNodes.TopicChannelDetails));
+    else if (data.is(innertube_1.YTNodes.CarouselHeader)) {
+        const details = data.contents.find((header) => header.is(innertube_1.YTNodes.TopicChannelDetails));
         if (details) {
             type = 'channel';
             title = this.unwrap(details.title);
@@ -433,10 +433,10 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
         }
     }
     // Generic PageHeader - need to check if 'channel' / 'playlist' type
-    else if (data.is(volumio_youtubei_js_1.YTNodes.PageHeader) && metadata?.is(volumio_youtubei_js_1.YTNodes.ChannelMetadata, volumio_youtubei_js_1.YTNodes.PlaylistMetadata)) {
+    else if (data.is(innertube_1.YTNodes.PageHeader) && metadata?.is(innertube_1.YTNodes.ChannelMetadata, innertube_1.YTNodes.PlaylistMetadata)) {
         title = this.unwrap(data.content?.title?.text);
         description = metadata.description;
-        if (metadata.is(volumio_youtubei_js_1.YTNodes.ChannelMetadata)) {
+        if (metadata.is(innertube_1.YTNodes.ChannelMetadata)) {
             type = 'channel';
             thumbnail = this.parseThumbnail(metadata.avatar);
             if (metadata.external_id) {
@@ -528,7 +528,7 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
                 section.items.push(parsedNested);
             }
         }
-        else if (contentItem.is(volumio_youtubei_js_1.YTNodes.ContinuationItem)) {
+        else if (contentItem.is(innertube_1.YTNodes.ContinuationItem)) {
             const continuationItem = __classPrivateFieldGet(this, _a, "m", _InnertubeResultParser_parseContinuationItem).call(this, contentItem, Endpoint_1.EndpointType.BrowseContinuation, Endpoint_1.EndpointType.SearchContinuation);
             if (continuationItem) {
                 section.continuation = continuationItem;
@@ -553,7 +553,7 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
     // Filters
     const sectionFilters = [];
     // FeedFilterChipBar
-    if (dataHeader?.is(volumio_youtubei_js_1.YTNodes.FeedFilterChipBar)) {
+    if (dataHeader?.is(innertube_1.YTNodes.FeedFilterChipBar)) {
         const chips = dataHeader.contents;
         /**
          * Note that, unlike other 'option.optionValues' type arrays, we don't
@@ -577,7 +577,7 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
         }
     }
     // SectionList.SearchSubMenu
-    if (data.sub_menu?.is(volumio_youtubei_js_1.YTNodes.SearchSubMenu)) {
+    if (data.sub_menu?.is(innertube_1.YTNodes.SearchSubMenu)) {
         // One filter per group
         const searchFilters = data.sub_menu.groups?.reduce((filters, group) => {
             const title = this.unwrap(group.title);
@@ -623,7 +623,7 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
     // Menus
     const sectionMenus = [];
     // SectionList.ChannelSubMenu
-    if (data.sub_menu?.is(volumio_youtubei_js_1.YTNodes.ChannelSubMenu)) {
+    if (data.sub_menu?.is(innertube_1.YTNodes.ChannelSubMenu)) {
         const contentTypeMenu = {
             type: 'option',
             optionValues: data.sub_menu.content_type_sub_menu_items.reduce((result, item) => {
@@ -646,7 +646,7 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
             section.title = contentTypeMenu.optionValues[0]?.text;
         }
         const sortSetting = data.sub_menu.sort_setting; // SortFilterSubMenu
-        if (sortSetting?.is(volumio_youtubei_js_1.YTNodes.SortFilterSubMenu) && sortSetting.sub_menu_items) {
+        if (sortSetting?.is(innertube_1.YTNodes.SortFilterSubMenu) && sortSetting.sub_menu_items) {
             const sortFilterMenu = {
                 type: 'option',
                 title: sortSetting.title,
@@ -764,7 +764,7 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
         }
         case 'GameCard': {
             const gcData = data;
-            if (gcData.game?.is(volumio_youtubei_js_1.YTNodes.GameDetails)) {
+            if (gcData.game?.is(innertube_1.YTNodes.GameDetails)) {
                 const gcDataName = this.unwrap(gcData.game.title);
                 const gcDataEndpoint = this.parseEndpoint(gcData.game.endpoint, Endpoint_1.EndpointType.Browse);
                 if (gcDataName && gcDataEndpoint) {
@@ -811,8 +811,8 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
             const lvData = data;
             const lvDataTitle = this.unwrap(lvData.metadata?.title);
             const lvDataEndpoint = this.parseEndpoint(lvData.renderer_context.command_context?.on_tap, Endpoint_1.EndpointType.Watch);
-            const thumbnailView = lvData.content_image?.is(volumio_youtubei_js_1.YTNodes.CollectionThumbnailView) ? lvData.content_image.primary_thumbnail :
-                lvData.content_image?.is(volumio_youtubei_js_1.YTNodes.ThumbnailView) ? lvData.content_image :
+            const thumbnailView = lvData.content_image?.is(innertube_1.YTNodes.CollectionThumbnailView) ? lvData.content_image.primary_thumbnail :
+                lvData.content_image?.is(innertube_1.YTNodes.ThumbnailView) ? lvData.content_image :
                     null;
             if (lvDataTitle && lvDataEndpoint) {
                 const playlistItem = {
@@ -931,7 +931,7 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
             name: data
         };
     }
-    if (data instanceof volumio_youtubei_js_1.Misc.Text) {
+    if (data instanceof innertube_1.Misc.Text) {
         const authorName = this.unwrap(data);
         if (authorName) {
             return {
@@ -954,17 +954,17 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
     if (!data) {
         return null;
     }
-    if (data instanceof volumio_youtubei_js_1.Misc.Text) {
+    if (data instanceof innertube_1.Misc.Text) {
         const s = this.unwrap(data);
         if (s) {
-            return volumio_youtubei_js_1.Utils.timeToSeconds(s);
+            return innertube_1.Utils.timeToSeconds(s);
         }
     }
     else if (typeof data === 'object' && data.seconds) {
         return data.seconds;
     }
     if (typeof data === 'string') {
-        return volumio_youtubei_js_1.Utils.timeToSeconds(data);
+        return innertube_1.Utils.timeToSeconds(data);
     }
     return null;
 }, _InnertubeResultParser_parseContinuationItem = function _InnertubeResultParser_parseContinuationItem(data, ...requireType) {

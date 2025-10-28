@@ -15,13 +15,23 @@ var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (
 }) : function(o, v) {
     o["default"] = v;
 });
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __classPrivateFieldSet = (this && this.__classPrivateFieldSet) || function (receiver, state, value, kind, f) {
     if (kind === "m") throw new TypeError("Private method is not writable");
     if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
@@ -52,7 +62,7 @@ const model_1 = __importStar(require("./lib/model"));
 const ViewHelper_1 = __importDefault(require("./lib/controller/browse/view-handlers/ViewHelper"));
 const InnertubeLoader_1 = __importDefault(require("./lib/model/InnertubeLoader"));
 const YouTube2NowPlayingMetadataProvider_1 = __importDefault(require("./lib/util/YouTube2NowPlayingMetadataProvider"));
-const volumio_youtubei_js_1 = require("volumio-youtubei.js");
+const innertube_1 = require("volumio-yt-support/dist/innertube");
 class ControllerYouTube2 {
     constructor(context) {
         _ControllerYouTube2_instances.add(this);
@@ -168,7 +178,7 @@ class ControllerYouTube2 {
         __classPrivateFieldSet(this, _ControllerYouTube2_searchController, new SearchController_1.default(), "f");
         __classPrivateFieldSet(this, _ControllerYouTube2_playController, new PlayController_1.default(), "f");
         __classPrivateFieldSet(this, _ControllerYouTube2_nowPlayingMetadataProvider, new YouTube2NowPlayingMetadataProvider_1.default(), "f");
-        volumio_youtubei_js_1.Parser.setParserErrorHandler(() => null); // Disable Innertube parser error reporting
+        innertube_1.Parser.setParserErrorHandler(() => null); // Disable Innertube parser error reporting
         __classPrivateFieldGet(this, _ControllerYouTube2_instances, "m", _ControllerYouTube2_addToBrowseSources).call(this);
         return kew_1.default.resolve();
     }
@@ -179,14 +189,14 @@ class ControllerYouTube2 {
         __classPrivateFieldSet(this, _ControllerYouTube2_searchController, null, "f");
         __classPrivateFieldSet(this, _ControllerYouTube2_playController, null, "f");
         __classPrivateFieldSet(this, _ControllerYouTube2_nowPlayingMetadataProvider, null, "f");
-        InnertubeLoader_1.default.reset();
-        YouTube2Context_1.default.reset();
+        return (0, util_1.jsPromiseToKew)(InnertubeLoader_1.default.reset()
+            .then(() => YouTube2Context_1.default.reset()));
         return kew_1.default.resolve();
     }
     getConfigurationFiles() {
         return ['config.json'];
     }
-    configSaveI18n(data) {
+    async configSaveI18n(data) {
         const oldRegion = YouTube2Context_1.default.hasConfigKey('region') ? YouTube2Context_1.default.getConfigValue('region') : null;
         const oldLanguage = YouTube2Context_1.default.hasConfigKey('language') ? YouTube2Context_1.default.getConfigValue('language') : null;
         const region = data.region.value;
@@ -194,13 +204,13 @@ class ControllerYouTube2 {
         if (oldRegion !== region || oldLanguage !== language) {
             YouTube2Context_1.default.setConfigValue('region', region);
             YouTube2Context_1.default.setConfigValue('language', language);
-            InnertubeLoader_1.default.applyI18nConfig();
+            await InnertubeLoader_1.default.applyI18nConfig();
             model_1.default.getInstance(model_1.ModelType.Config).clearCache();
             YouTube2Context_1.default.refreshUIConfig();
         }
         YouTube2Context_1.default.toast('success', YouTube2Context_1.default.getI18n('YOUTUBE2_SETTINGS_SAVED'));
     }
-    configSaveAccount(data) {
+    async configSaveAccount(data) {
         const oldCookie = YouTube2Context_1.default.hasConfigKey('cookie') ? YouTube2Context_1.default.getConfigValue('cookie') : null;
         const cookie = data.cookie?.trim();
         const oldActiveChannelHandle = YouTube2Context_1.default.getConfigValue('activeChannelHandle');
@@ -217,7 +227,7 @@ class ControllerYouTube2 {
         }
         YouTube2Context_1.default.toast('success', YouTube2Context_1.default.getI18n('YOUTUBE2_SETTINGS_SAVED'));
         if (resetInnertube) {
-            InnertubeLoader_1.default.reset();
+            await InnertubeLoader_1.default.reset();
             YouTube2Context_1.default.refreshUIConfig();
         }
     }
