@@ -25,48 +25,113 @@ interface MpdState {
 export default class PlayController {
 
   #mpdPlugin: any;
-  #autoplayListener: (() => void) | null;
-  #lastPlaybackInfo: {
-    track: QueueItem;
-    position: number;
-  };
   #prefetchPlaybackStateFixer: PrefetchPlaybackStateFixer | null;
   #prefetchAborter: AbortController | null;
 
+    /**
+   * Autoplay:
+   * Two listeners:
+   * 1. volumioStateListener: captures 'volumioPushState' events.
+   *    - On 'play' event of youtube2 track, stores the track being played in `lastPlaybackInfo` 
+   *      and ensures mpdStateListener is added.
+   *    - If on 'play' event of track povided by a different service, clear `lastPlaybackInfo` and
+   *      ensure mpdStateListener is removed,
+   * 2. mpdStateListener: captures MPD's system-player event.
+   *    - On 'stop' event, check if the track that stopped playing (`lastPlaybackInfo`) is last item
+   *      in queue. If so, fetch items for autoplay.
+   *    - If `lastPlaybackInfo` is null, that means the track that stopped playing is not provided by
+   *      the plugin. Nothing is to be done in this case.
+   * 
+   * In theory, volumioStateListener can be used to listen for 'stop' events as well, so
+   * mpdStateListener is not needed. In practice, it is difficult to process the events it emits:
+   * - multiple events with the same payload are emitted for no reason;
+   * - when moving to the next track in queue, a 'stop' event is emitted for the next track
+   *   before the 'play' event.
+   * 
+   * It is simpler and more predictable to just use volumioStateListener to capture the currently-played
+   * track, and mpdStateListener to capture moment when playback stops.
+   */
+  #volumioStateListener: ((state: any) => void) | null;
+  #mpdStateListener: (() => void) | null;
+  #lastPlaybackInfo: {
+    track: QueueItem;
+    position: number;
+  } | null;
+
   constructor() {
     this.#mpdPlugin = yt2.getMpdPlugin();
-    this.#autoplayListener = null;
     this.#prefetchPlaybackStateFixer = new PrefetchPlaybackStateFixer();
     this.#prefetchPlaybackStateFixer.on('playPrefetch', (info: { track: QueueItem; position: number; }) => {
       this.#lastPlaybackInfo = info;
     });
     this.#prefetchAborter = null;
+    // Autoplay
+    this.#mpdStateListener = null;
+    this.#volumioStateListener = null;
+    this.#lastPlaybackInfo = null;
   }
 
   reset() {
-    this.#removeAutoplayListener();
+    this.#removeMpdStateListener();
+    this.#removeVolumioStateListener();
     this.#prefetchPlaybackStateFixer?.reset();
     this.#prefetchPlaybackStateFixer = null;
   }
 
-  #addAutoplayListener() {
-    if (!this.#autoplayListener) {
-      this.#autoplayListener = () => {
-        this.#mpdPlugin.getState().then((state: MpdState) => {
-          if (state.status === 'stop') {
-            void this.#handleAutoplay();
-            this.#removeAutoplayListener();
+    #addVolumioStateListener() {
+    if (!this.#volumioStateListener) {
+      this.#volumioStateListener = (state: any) => {
+        if (state.status === 'play') {
+          if (state.service === 'youtube2') {
+            this.#lastPlaybackInfo = {
+              track: state,
+              position: state.position
+            };
+            // Volumio state indicates playback of youtube2 track.
+            // Ensure we listen for changes in MPD state
+            this.#addMpdStateListener();
           }
-        });
+          else {
+            // Different service - autoplay doesn't apply
+            this.#removeMpdStateListener();
+            this.#lastPlaybackInfo = null;
+            return;
+          }
+        }
       };
-      this.#mpdPlugin.clientMpd.on('system-player', this.#autoplayListener);
+      yt2.volumioCoreCommand?.addCallback('volumioPushState', this.#volumioStateListener);
     }
   }
 
-  #removeAutoplayListener() {
-    if (this.#autoplayListener) {
-      this.#mpdPlugin.clientMpd.removeListener('system-player', this.#autoplayListener);
-      this.#autoplayListener = null;
+  #removeVolumioStateListener() {
+    if (this.#volumioStateListener) {
+      const listeners = yt2.volumioCoreCommand?.callbacks?.['volumioPushState'] || [];
+      const index = listeners.indexOf(this.#volumioStateListener);
+      if (index >= 0) {
+        yt2.volumioCoreCommand.callbacks['volumioPushState'].splice(index, 1);
+      }
+      this.#volumioStateListener = null;
+    }
+  }
+
+  #addMpdStateListener() {
+    if (!this.#mpdStateListener) {
+      this.#mpdStateListener = () => {
+        this.#mpdPlugin.getState().then((state: MpdState) => {
+          if (state.status === 'stop') {
+            void this.#handleAutoplay();
+            this.#removeMpdStateListener();
+          }
+        });
+      };
+      this.#mpdPlugin.clientMpd.on('system-player', this.#mpdStateListener);
+    }
+  }
+
+  #removeMpdStateListener() {
+    if (this.#mpdStateListener) {
+      this.#mpdPlugin.clientMpd.removeListener('system-player', this.#mpdStateListener);
+      this.#mpdStateListener = null;
     }
   }
 
@@ -114,7 +179,8 @@ export default class PlayController {
     await this.#doPlay(safeStreamUrl, track);
 
     if (yt2.getConfigValue('autoplay')) {
-      this.#addAutoplayListener();
+      this.#addMpdStateListener();
+      this.#addVolumioStateListener();
     }
 
     if (yt2.getConfigValue('addToHistory')) {
@@ -141,7 +207,8 @@ export default class PlayController {
 
   // Returns kew promise!
   stop() {
-    this.#removeAutoplayListener();
+    this.#removeVolumioStateListener();
+    this.#removeMpdStateListener();
     yt2.getStateMachine().setConsumeUpdateService('mpd', true, false);
     return this.#mpdPlugin.stop();
   }
@@ -241,6 +308,9 @@ export default class PlayController {
   }
 
   async #handleAutoplay() {
+    if (!yt2.getConfigValue('autoplay') || !this.#lastPlaybackInfo) {
+      return;
+    }
     const lastPlayedQueueIndex = this.#findLastPlayedTrackQueueIndex();
     if (lastPlayedQueueIndex < 0) {
       return;
@@ -248,10 +318,8 @@ export default class PlayController {
 
     const stateMachine = yt2.getStateMachine(),
       state = stateMachine.getState(),
-      isLastTrack = stateMachine.getQueue().length - 1 === lastPlayedQueueIndex,
-      currentPositionChanged = state.position !== lastPlayedQueueIndex; // True if client clicks on another item in the queue
-
-    const noAutoplayConditions = !yt2.getConfigValue('autoplay') || currentPositionChanged || !isLastTrack || state.random || state.repeat || state.repeatSingle;
+      isLastTrack = stateMachine.getQueue().length - 1 === lastPlayedQueueIndex;
+    const noAutoplayConditions =  !isLastTrack || state.random || state.repeat || state.repeatSingle;
     const getAutoplayItemsPromise = noAutoplayConditions ? Promise.resolve(null) : this.#getAutoplayItems();
 
     if (!noAutoplayConditions) {
@@ -299,7 +367,7 @@ export default class PlayController {
   }
 
   async #getAutoplayItems() {
-    const lastPlayedEndpoint = ExplodeHelper.getExplodedTrackInfoFromUri(this.#lastPlaybackInfo?.track?.uri)?.endpoint;
+    const lastPlayedEndpoint = this.#lastPlaybackInfo ? ExplodeHelper.getExplodedTrackInfoFromUri(this.#lastPlaybackInfo.track.uri)?.endpoint : null;
     const videoId = lastPlayedEndpoint?.payload?.videoId;
 
     if (!videoId) {
