@@ -50,6 +50,6 @@
 		"now-playing-common": "git+https://github.com/patrickkfkan/volumio-now-playing-common#v0.3.2",
 		"string-format": "^2.0.0",
 		"v-conf": "^1.4.2",
-		"volumio-yt-support": "file:dep/volumio-yt-support-1.0.0.tgz"
+		"volumio-yt-support": "file:dep/volumio-yt-support-1.1.0.tgz"
 	}
 }
