@@ -7,6 +7,7 @@ export default class InnertubeLoader {
 
   static async getInstance(): Promise<InnertubeWrapper> {
     if (!this.#instancePromise) {
+      yt2.toast('info', yt2.getI18n('YOUTUBE2_PREPPING_API'));
       this.#instancePromise = InnertubeFactory.getWrappedInstance({
         account: {
           cookie: yt2.getConfigValue('cookie') || undefined,

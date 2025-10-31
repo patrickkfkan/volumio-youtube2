@@ -20,6 +20,7 @@ const volumio_yt_support_1 = require("volumio-yt-support");
 class InnertubeLoader {
     static async getInstance() {
         if (!__classPrivateFieldGet(this, _a, "f", _InnertubeLoader_instancePromise)) {
+            YouTube2Context_1.default.toast('info', YouTube2Context_1.default.getI18n('YOUTUBE2_PREPPING_API'));
             __classPrivateFieldSet(this, _a, volumio_yt_support_1.InnertubeFactory.getWrappedInstance({
                 account: {
                     cookie: YouTube2Context_1.default.getConfigValue('cookie') || undefined,

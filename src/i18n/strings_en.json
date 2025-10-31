@@ -41,6 +41,7 @@
   "YOUTUBE2_ACTIVE_CHANNEL": "Active Profile",
   "YOUTUBE2_COOKIE_GUIDE": "How to Obtain Cookie",
   "YOUTUBE2_COOKIE": "Cookie",
+  "YOUTUBE2_PREPPING_API": "Preparing API access... this may take a moment.",
   "YOUTUBE2_AUTOPLAY_FETCH": "Autoplay: fetching more items for playback...",
   "YOUTUBE2_AUTOPLAY_NO_ITEMS": "Autoplay: no more items available",
   "YOUTUBE2_AUTOPLAY_ADDED": "Autoplay: added {} items to the queue",
