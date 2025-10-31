@@ -9,6 +9,7 @@ export interface PluginConfigSchemaEntry<T, U = false> {
 }
 
 export interface PluginConfigSchema {
+  hasAcceptedDisclaimer: PluginConfigSchemaEntry<boolean>;
   region: PluginConfigSchemaEntry<string>;
   language: PluginConfigSchemaEntry<string>;
   rootContentType: PluginConfigSchemaEntry<'full' | 'simple'>,

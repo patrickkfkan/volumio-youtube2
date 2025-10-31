@@ -7,6 +7,13 @@ import { PLUGIN_CONFIG_SCHEMA } from './model/ConfigModel';
 
 export type I18nKey = keyof typeof I18nSchema;
 
+type PreviousToast = {
+  type: 'success' | 'info' | 'error' | 'warning';
+  message: string;
+  title: string;
+  dt: number;
+} | null;
+
 class YouTube2Context {
 
   #singletons: Record<string, any>;
@@ -54,6 +61,22 @@ class YouTube2Context {
   }
 
   toast(type: 'success' | 'info' | 'error' | 'warning', message: string, title = 'YouTube2') {
+    // Suppress duplicate toasts if an identical one was shown within the last 5 seconds
+    const previousToast = this.get<PreviousToast>('previousToast');
+    if (previousToast &&
+      previousToast.type === type &&
+      previousToast.message === message &&
+      previousToast.title === title &&
+      Date.now() - previousToast.dt <= 5000
+    ) {
+      return;
+    }
+    this.set<PreviousToast>('previousToast', {
+      type,
+      message,
+      title,
+      dt: Date.now()
+    });
     this.#pluginContext.coreCommand.pushToastMessage(type, title, message);
   }
 

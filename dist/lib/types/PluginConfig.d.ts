@@ -6,6 +6,7 @@ export interface PluginConfigSchemaEntry<T, U = false> {
     json: U;
 }
 export interface PluginConfigSchema {
+    hasAcceptedDisclaimer: PluginConfigSchemaEntry<boolean>;
     region: PluginConfigSchemaEntry<string>;
     language: PluginConfigSchemaEntry<string>;
     rootContentType: PluginConfigSchemaEntry<'full' | 'simple'>;

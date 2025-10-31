@@ -5,11 +5,18 @@
   "YOUTUBE2_MORE": "More",
   "YOUTUBE2_SEE_ALL": "See all",
   "YOUTUBE2_SEARCH_TITLE": "YouTube results for \"{}\"",
+  "YOUTUBE2_SECTION_DISCLAIMER": "Disclaimer",
+  "YOUTUBE2_DISCLAIMER_HEADING": "⚠️ Disclaimer",
+  "YOUTUBE2_DISCLAIMER_DESC": "You must accept the disclaimer before using the plugin.",
   "YOUTUBE2_SECTION_I18N": "Language and Region",
   "YOUTUBE2_SECTION_ACCOUNT": "Account",
   "YOUTUBE2_SECTION_BROWSE": "Browse",
   "YOUTUBE2_SECTION_PLAYBACK": "Playback",
   "YOUTUBE2_SECTION_YT_PLAYBACK_MODE": "YouTube Playback Mode",
+  "YOUTUBE2_VIEW_DISCLAIMER": "View Disclaimer",
+  "YOUTUBE2_PROJECT_HOME": "Project Homepage",
+  "YOUTUBE2_CLOSE": "Close",
+  "YOUTUBE2_ACCEPT": "Accept",
   "YOUTUBE2_ROOT_CONTENT_TYPE": "Landing page contents",
   "YOUTUBE2_FULL": "Full",
   "YOUTUBE2_SIMPLE": "Simple",
@@ -59,5 +66,7 @@
   "YOUTUBE2_ERR_NO_PLAYABLE_ITEMS_FOUND": "No playable items found",
   "YOUTUBE2_ERR_ENDPOINT_INVALID": "Endpoint missing or invalid",
   "YOUTUBE2_ERR_INVALID_URI": "Invalid URI",
-  "YOUTUBE2_ERR_UNKNOWN_CHANNEL_HANDLE": "Unknown channel handle \"{}\""
+  "YOUTUBE2_ERR_UNKNOWN_CHANNEL_HANDLE": "Unknown channel handle \"{}\"",
+  "YOUTUBE2_ERR_ACCEPT_DISCLAIMER_BROWSE": "You need to go to YouTube2 plugin settings and accept the Disclaimer first.",
+  "YOUTUBE2_ERR_ACCEPT_DISCLAIMER_PLAY": "Playback denied. You need to go to YouTube2 plugin settings and accept the Disclaimer first."
 }

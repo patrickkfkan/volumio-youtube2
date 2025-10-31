@@ -109,6 +109,10 @@ class PlayController {
         YouTube2Context_1.default.getLogger().info(`[youtube2-play] clearAddPlayTrack: ${track.uri}`);
         __classPrivateFieldGet(this, _PlayController_instances, "m", _PlayController_cancelPrefetch).call(this);
         __classPrivateFieldGet(this, _PlayController_prefetchPlaybackStateFixer, "f")?.notifyPrefetchCleared();
+        if (!YouTube2Context_1.default.getConfigValue('hasAcceptedDisclaimer')) {
+            YouTube2Context_1.default.toast('error', YouTube2Context_1.default.getI18n('YOUTUBE2_ERR_ACCEPT_DISCLAIMER_PLAY'));
+            return;
+        }
         const { videoId, info: playbackInfo } = await PlayController.getPlaybackInfoFromUri(track.uri);
         if (!playbackInfo) {
             throw Error(`Could not obtain playback info for videoId: ${videoId})`);

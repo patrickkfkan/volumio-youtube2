@@ -7,6 +7,7 @@ import { type PluginConfig } from '../types';
 import { type I18nOptions, type PluginConfigSchema } from '../types/PluginConfig';
 
 export const PLUGIN_CONFIG_SCHEMA: PluginConfigSchema = {
+  hasAcceptedDisclaimer: { defaultValue: false, json: false },
   region: { defaultValue: 'US', json: false },
   language: { defaultValue: 'en', json: false },
   rootContentType: { defaultValue: 'full', json: false },

@@ -18,6 +18,7 @@ import InnertubeLoader from './lib/model/InnertubeLoader';
 import { type NowPlayingPluginSupport } from 'now-playing-common';
 import YouTube2NowPlayingMetadataProvider from './lib/util/YouTube2NowPlayingMetadataProvider';
 import { Parser } from 'volumio-yt-support/dist/innertube';
+import { existsSync, readFileSync } from 'fs';
 
 interface GotoParams extends QueueItem {
   type: 'album' | 'artist';
@@ -42,33 +43,43 @@ class ControllerYouTube2 implements NowPlayingPluginSupport {
   getUIConfig() {
     const defer = libQ.defer();
 
+    const hasAcceptedDisclaimer = yt2.getConfigValue('hasAcceptedDisclaimer');
     const langCode = this.#commandRouter.sharedVars.get('language_code');
     const loadConfigPromises = [
       kewToJSPromise(this.#commandRouter.i18nJson(`${__dirname}/i18n/strings_${langCode}.json`,
         `${__dirname}/i18n/strings_en.json`,
         `${__dirname}/UIConfig.json`)),
-      this.#getConfigI18nOptions(),
-      this.#getConfigAccountInfo()
+      hasAcceptedDisclaimer ? this.#getConfigI18nOptions() : Promise.resolve(null),
+      hasAcceptedDisclaimer ? this.#getConfigAccountInfo() : Promise.resolve(null)
     ] as const;
 
     const configModel = Model.getInstance(ModelType.Config);
 
     Promise.all(loadConfigPromises)
       .then(([ uiconf, i18nOptions, account ]) => {
-        const i18nUIConf = uiconf.sections[0];
-        const accountUIConf = uiconf.sections[1];
-        const browseUIConf = uiconf.sections[2];
-        const playbackUIConf = uiconf.sections[3];
-        const ytPlaybackModeConf = uiconf.sections[4];
+        const disclaimerUIConf = uiconf.sections[0];
+        const i18nUIConf = uiconf.sections[1];
+        const accountUIConf = uiconf.sections[2];
+        const browseUIConf = uiconf.sections[3];
+        const playbackUIConf = uiconf.sections[4];
+        const ytPlaybackModeConf = uiconf.sections[5];
 
+        // Disclaimer
+        disclaimerUIConf.content[1].value = hasAcceptedDisclaimer;
+
+        if (!hasAcceptedDisclaimer) {
+          // hasAcceptedDisclaimer is false
+          uiconf.sections = [ disclaimerUIConf ];
+          return defer.resolve(uiconf);
+        }
         // I18n
         // -- region
-        i18nUIConf.content[0].label = i18nOptions.options.region?.label;
-        i18nUIConf.content[0].options = i18nOptions.options.region?.optionValues;
-        i18nUIConf.content[0].value = i18nOptions.selected.region;
-        i18nUIConf.content[1].label = i18nOptions.options.language?.label;
-        i18nUIConf.content[1].options = i18nOptions.options.language?.optionValues;
-        i18nUIConf.content[1].value = i18nOptions.selected.language;
+        i18nUIConf.content[0].label = i18nOptions!.options.region?.label;
+        i18nUIConf.content[0].options = i18nOptions!.options.region?.optionValues;
+        i18nUIConf.content[0].value = i18nOptions!.selected.region;
+        i18nUIConf.content[1].label = i18nOptions!.options.language?.label;
+        i18nUIConf.content[1].options = i18nOptions!.options.language?.optionValues;
+        i18nUIConf.content[1].value = i18nOptions!.selected.language;
 
         // Account
         const cookie = yt2.getConfigValue('cookie');
@@ -231,6 +242,56 @@ class ControllerYouTube2 implements NowPlayingPluginSupport {
     }
   }
 
+  showDisclaimer() {
+    const langCode = this.#commandRouter.sharedVars.get('language_code');
+    let disclaimerFile = `${__dirname}/i18n/disclaimer_${langCode}.html`;
+    if (!existsSync(disclaimerFile)) {
+      disclaimerFile = `${__dirname}/i18n/disclaimer_en.html`;
+    }
+    try {
+      const contents = readFileSync(disclaimerFile, { encoding: 'utf8' });
+      const modalData = {
+        title: yt2.getI18n('YOUTUBE2_DISCLAIMER_HEADING'),
+        message: contents,
+        size: 'lg',
+        buttons: [
+          {
+            name: yt2.getI18n('YOUTUBE2_CLOSE'),
+            class: 'btn btn-warning'
+          },
+          {
+            name: yt2.getI18n('YOUTUBE2_ACCEPT'),
+            class: 'btn btn-info',
+            emit: 'callMethod',
+            payload: {
+              type: 'controller',
+              endpoint: 'music_service/youtube2',
+              method:'acceptDisclaimer',
+              data: ''
+            } 
+          }
+        ]
+      };
+      yt2.volumioCoreCommand.broadcastMessage("openModal", modalData);
+    }
+    catch (error) {
+      yt2.getLogger().error(`[youtube2] ${yt2.getErrorMessage(`Error reading "${disclaimerFile}"`, error, false)}`)
+      yt2.toast('error', 'Error loading disclaimer contents');
+    }
+  }
+
+  acceptDisclaimer() {
+    this.configSaveDisclaimer({
+      hasAcceptedDisclaimer: true
+    });
+  }
+
+  configSaveDisclaimer(data: any) {
+    yt2.setConfigValue('hasAcceptedDisclaimer', data.hasAcceptedDisclaimer);
+    yt2.toast('success', yt2.getI18n('YOUTUBE2_SETTINGS_SAVED'));
+    yt2.refreshUIConfig();
+  }
+
   async configSaveI18n(data: any) {
     const oldRegion = yt2.hasConfigKey('region') ? yt2.getConfigValue('region') : null;
     const oldLanguage = yt2.hasConfigKey('language') ? yt2.getConfigValue('language') : null;
@@ -351,12 +412,21 @@ class ControllerYouTube2 implements NowPlayingPluginSupport {
     if (!this.#browseController) {
       return libQ.reject('YouTube2 plugin is not started');
     }
+    if (!yt2.getConfigValue('hasAcceptedDisclaimer')) {
+      return libQ.reject({
+        errorMessage: yt2.getI18n('YOUTUBE2_ERR_ACCEPT_DISCLAIMER_BROWSE')
+      });
+    }
     return jsPromiseToKew(this.#browseController.browseUri(uri));
   }
 
   explodeUri(uri: string) {
     if (!this.#browseController) {
-      return libQ.reject('YouTube2 Discover plugin is not started');
+      return libQ.reject('YouTube2 plugin is not started');
+    }
+    if (!yt2.getConfigValue('hasAcceptedDisclaimer')) {
+      yt2.toast('error', yt2.getI18n('YOUTUBE2_ERR_ACCEPT_DISCLAIMER_PLAY'));
+      return libQ.reject(yt2.getI18n('YOUTUBE2_ERR_ACCEPT_DISCLAIMER_PLAY'));
     }
     return jsPromiseToKew(this.#browseController.explodeUri(uri));
   }

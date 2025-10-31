@@ -4,6 +4,51 @@
   },
   "sections": [
     {
+      "id": "section_disclaimer",
+      "element":" section",
+      "label": "TRANSLATE.YOUTUBE2_SECTION_DISCLAIMER",
+      "icon": "fa-exclamation-triangle",
+      "description": "TRANSLATE.YOUTUBE2_DISCLAIMER_DESC",
+      "onSave": {
+        "type": "controller",
+        "endpoint": "music_service/youtube2",
+        "method": "configSaveDisclaimer"
+      },
+      "saveButton": {
+        "label": "TRANSLATE.YOUTUBE2_SAVE",
+        "data": [
+          "hasAcceptedDisclaimer"
+        ]
+      },
+      "content": [
+        {
+          "id": "viewDisclaimer",
+          "element": "button",
+          "label": "TRANSLATE.YOUTUBE2_VIEW_DISCLAIMER",
+          "onClick": {
+            "type": "controller",
+            "endpoint": "music_service/youtube2",
+            "method": "showDisclaimer"
+          }
+        },
+        {
+          "id": "hasAcceptedDisclaimer",
+          "element": "switch",
+          "label": "TRANSLATE.YOUTUBE2_ACCEPT",
+          "value": false
+        },
+        {
+          "id": "projectHome",
+          "element": "button",
+          "label": "TRANSLATE.YOUTUBE2_PROJECT_HOME",
+          "onClick": {
+            "type": "openUrl",
+            "url": "https://github.com/patrickkfkan/volumio-youtube2"
+          }
+        }        
+      ]
+    },
+    {
       "id": "section_i18n",
       "element": "section",
       "label": "TRANSLATE.YOUTUBE2_SECTION_I18N",

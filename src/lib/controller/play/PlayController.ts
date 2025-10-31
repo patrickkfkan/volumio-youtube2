@@ -71,6 +71,11 @@ export default class PlayController {
     this.#cancelPrefetch();
     this.#prefetchPlaybackStateFixer?.notifyPrefetchCleared();
 
+    if (!yt2.getConfigValue('hasAcceptedDisclaimer')) {
+      yt2.toast('error', yt2.getI18n('YOUTUBE2_ERR_ACCEPT_DISCLAIMER_PLAY'));
+      return;
+    }
+
     const {videoId, info: playbackInfo} = await PlayController.getPlaybackInfoFromUri(track.uri);
     if (!playbackInfo) {
       throw Error(`Could not obtain playback info for videoId: ${videoId})`);

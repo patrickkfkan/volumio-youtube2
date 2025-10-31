@@ -10,6 +10,7 @@ const util_1 = require("../util");
 const BaseModel_1 = require("./BaseModel");
 const InnertubeResultParser_1 = __importDefault(require("./InnertubeResultParser"));
 exports.PLUGIN_CONFIG_SCHEMA = {
+    hasAcceptedDisclaimer: { defaultValue: false, json: false },
     region: { defaultValue: 'US', json: false },
     language: { defaultValue: 'en', json: false },
     rootContentType: { defaultValue: 'full', json: false },
