@@ -1,4 +1,4 @@
-import { Innertube } from 'volumio-yt-support/dist/innertube';
+import { type Innertube } from 'volumio-yt-support/dist/innertube';
 import { type PluginConfig } from '../types';
 export type AccountInfo = {
     isSignedIn: true;

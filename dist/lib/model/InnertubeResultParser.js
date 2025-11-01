@@ -566,7 +566,7 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
             return {
                 text: chip.text,
                 endpoint,
-                selected: !!chip.is_selected
+                selected: chip.is_selected
             };
         });
         if (dataFilters.length > 0) {
@@ -590,7 +590,7 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
                         result.push({
                             text,
                             endpoint,
-                            selected: !!f.selected
+                            selected: f.selected
                         });
                     }
                     return result;
@@ -632,7 +632,7 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
                     result.push({
                         text: item.title,
                         endpoint,
-                        selected: !!item.selected
+                        selected: item.selected
                     });
                 }
                 return result;
@@ -656,7 +656,7 @@ _a = InnertubeResultParser, _InnertubeResultParser_parseWatchContinuationEndpoin
                         result.push({
                             text: item.title,
                             endpoint,
-                            selected: !!item.selected
+                            selected: item.selected
                         });
                     }
                     return result;

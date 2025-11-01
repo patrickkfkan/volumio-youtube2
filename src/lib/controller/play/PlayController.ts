@@ -15,7 +15,7 @@ import type VideoPlaybackInfo from '../../types/VideoPlaybackInfo';
 import { type ContentItem } from '../../types';
 import EndpointHelper from '../../util/EndpointHelper';
 import EventEmitter from 'events';
-import { AutoplayManager, LastPlaybackInfo } from 'volumio-yt-support';
+import { AutoplayManager, type LastPlaybackInfo } from 'volumio-yt-support';
 
 export default class PlayController {
 

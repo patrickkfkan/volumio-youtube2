@@ -1,4 +1,4 @@
-import { Innertube, type YTNodes } from 'volumio-yt-support/dist/innertube';
+import { type Innertube, type YTNodes } from 'volumio-yt-support/dist/innertube';
 import { type PluginConfig } from '../types';
 import InnertubeResultParser from './InnertubeResultParser';
 

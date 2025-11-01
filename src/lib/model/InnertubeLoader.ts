@@ -1,5 +1,5 @@
 import yt2 from '../YouTube2Context';
-import { InnertubeFactory, InnertubeWrapper, type PotFnResult } from 'volumio-yt-support';
+import { InnertubeFactory, type InnertubeWrapper, type PotFnResult } from 'volumio-yt-support';
 
 export default class InnertubeLoader {
 

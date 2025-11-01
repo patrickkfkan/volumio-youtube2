@@ -466,7 +466,7 @@ _ControllerYouTube2_context = new WeakMap(), _ControllerYouTube2_config = new We
     }
     catch (error) {
         YouTube2Context_1.default.getLogger().warn(YouTube2Context_1.default.getErrorMessage('[youtube2] Failed to get account config:', error));
-        return null;
+        return Promise.resolve(null);
     }
 }, _ControllerYouTube2_configCheckAutoplay = function _ControllerYouTube2_configCheckAutoplay() {
     const addToHistory = YouTube2Context_1.default.getConfigValue('addToHistory');

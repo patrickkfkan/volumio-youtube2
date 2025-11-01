@@ -35,7 +35,7 @@ class Model {
         if (MODEL_TYPE_TO_CLASS[type]) {
             return new MODEL_TYPE_TO_CLASS[type]();
         }
-        throw Error(`Model not found for type ${String(ModelType)}`);
+        throw Error(`Model not found for type ${type}`);
     }
 }
 exports.default = Model;

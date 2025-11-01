@@ -535,7 +535,7 @@ export default class InnertubeResultParser {
         return {
           text: chip.text,
           endpoint,
-          selected: !!chip.is_selected
+          selected: chip.is_selected
         };
       });
       if (dataFilters.length > 0) {
@@ -560,7 +560,7 @@ export default class InnertubeResultParser {
                 result.push({
                   text,
                   endpoint,
-                  selected: !!f.selected
+                  selected: f.selected
                 });
               }
               return result;
@@ -609,7 +609,7 @@ export default class InnertubeResultParser {
               result.push({
                 text: item.title,
                 endpoint,
-                selected: !!item.selected
+                selected: item.selected
               });
             }
             return result;
@@ -636,7 +636,7 @@ export default class InnertubeResultParser {
                 result.push({
                   text: item.title,
                   endpoint,
-                  selected: !!item.selected
+                  selected: item.selected
                 });
               }
               return result;

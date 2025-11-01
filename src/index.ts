@@ -238,7 +238,7 @@ class ControllerYouTube2 implements NowPlayingPluginSupport {
     }
     catch (error: unknown) {
       yt2.getLogger().warn(yt2.getErrorMessage('[youtube2] Failed to get account config:', error));
-      return null;
+      return Promise.resolve(null);
     }
   }
 

@@ -1,4 +1,4 @@
-import {Innertube, type InnertubeEndpoint} from 'volumio-yt-support/dist/innertube';
+import {type Innertube, type InnertubeEndpoint} from 'volumio-yt-support/dist/innertube';
 import { Parser } from 'volumio-yt-support/dist/innertube';
 import { BaseModel } from './BaseModel';
 import type Endpoint from '../types/Endpoint';

@@ -1,4 +1,4 @@
-import { InnertubeWrapper, type PotFnResult } from 'volumio-yt-support';
+import { type InnertubeWrapper, type PotFnResult } from 'volumio-yt-support';
 export default class InnertubeLoader {
     #private;
     static getInstance(): Promise<InnertubeWrapper>;

@@ -49,7 +49,7 @@ class VideoModel extends BaseModel_1.BaseModel {
                 client === 'WEB') {
                 // For non-live videos, WEB client returns SABR streams which Innertube can't decipher.
                 // We need to switch to WEB_EMBEDDED client wih TV as fallback.
-                return this.getPlaybackInfo(videoId, 'WEB_EMBEDDED', signal);
+                return await this.getPlaybackInfo(videoId, 'WEB_EMBEDDED', signal);
             }
             const result = {
                 type: 'video',
@@ -153,6 +153,7 @@ _VideoModel_instances = new WeakSet(), _VideoModel_sleep = function _VideoModel_
 }, _VideoModel_chooseFormat = async function _VideoModel_chooseFormat(innertube, videoInfo) {
     const format = videoInfo?.chooseFormat(BEST_AUDIO_FORMAT);
     const streamUrl = format ? await format.decipher(innertube.session.player) : null;
+    // eslint-disable-next-line @typescript-eslint/no-misused-spread
     const streamData = format ? { ...format, url: streamUrl } : null;
     return __classPrivateFieldGet(this, _VideoModel_instances, "m", _VideoModel_parseStreamData).call(this, streamData);
 }, _VideoModel_parseStreamData = function _VideoModel_parseStreamData(data) {

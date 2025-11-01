@@ -1,4 +1,4 @@
-import {type YT, type Types, Utils, Innertube} from 'volumio-yt-support/dist/innertube';
+import {type YT, type Types, Utils, type Innertube} from 'volumio-yt-support/dist/innertube';
 import yt2 from '../YouTube2Context';
 import type VideoPlaybackInfo from '../types/VideoPlaybackInfo';
 import { BaseModel } from './BaseModel';
@@ -49,7 +49,7 @@ export default class VideoModel extends BaseModel {
       ) {
         // For non-live videos, WEB client returns SABR streams which Innertube can't decipher.
         // We need to switch to WEB_EMBEDDED client wih TV as fallback.
-        return this.getPlaybackInfo(videoId, 'WEB_EMBEDDED', signal);
+        return await this.getPlaybackInfo(videoId, 'WEB_EMBEDDED', signal);
       }
 
       const result: VideoPlaybackInfo = {
@@ -163,6 +163,7 @@ export default class VideoModel extends BaseModel {
   async #chooseFormat(innertube: Innertube, videoInfo: YT.VideoInfo): Promise<VideoPlaybackInfo['stream'] | null> {
     const format = videoInfo?.chooseFormat(BEST_AUDIO_FORMAT);
     const streamUrl = format ? await format.decipher(innertube.session.player) : null;
+    // eslint-disable-next-line @typescript-eslint/no-misused-spread
     const streamData = format ? { ...format, url: streamUrl } : null;
     return this.#parseStreamData(streamData);
   }
