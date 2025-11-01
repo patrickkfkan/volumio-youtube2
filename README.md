@@ -6,6 +6,11 @@ Credit goes to the [YouTube.js](https://github.com/LuanRT/YouTube.js) project. T
 
 ### Changelog
 
+2.4.0
+- Fix stream errors due to YT changes
+- Improve autoplay reliability
+- Add disclaimer, which users need to accept in the plugin settings
+
 2.3.6
 - Test stream URL before returning playback info (sometimes requires multiple tries due to YT imposing a delay)
 - Abort prefetches that didn't resolve in time
