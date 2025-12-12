@@ -1,4 +1,4 @@
-import {type YT, type Types, Utils, type Innertube} from 'volumio-yt-support/dist/innertube';
+import {type YT, type Types, type Innertube} from 'volumio-yt-support/dist/innertube';
 import yt2 from '../YouTube2Context';
 import type VideoPlaybackInfo from '../types/VideoPlaybackInfo';
 import { BaseModel } from './BaseModel';
@@ -27,28 +27,48 @@ interface HLSPlaylistVariant {
   url?: string;
 }
 
+const CLIENTS = ['WEB', 'WEB_EMBEDDED', 'TV'] as const;
+
 export default class VideoModel extends BaseModel {
 
-  async getPlaybackInfo(videoId: string, client?: Types.InnerTubeClient, signal?: AbortSignal): Promise<VideoPlaybackInfo | null> {
+  async getPlaybackInfo(videoId: string, client?: typeof CLIENTS[number], signal?: AbortSignal): Promise<VideoPlaybackInfo | null> {
     const { innertube } = await this.getInnertube();
-
+    let isLive = false;
     try {
-      client = client ?? 'WEB';
+      client = client ?? CLIENTS[0];
+
+      const __tryNextClientOnError = async (error: any) => {
+        const clientIndex = CLIENTS.indexOf(client!);
+        if (clientIndex < CLIENTS.length - 1) {
+          const nextClient = CLIENTS[clientIndex + 1];
+          yt2.getLogger().warn(`[youtube2] Error getting video info with ${client} client in VideoModel.getPlaybackInfo(${videoId}): ${yt2.getErrorMessage('', error, false)} - retry with '${nextClient}' client.`);
+          return await this.getPlaybackInfo(videoId, nextClient, signal);
+        }
+        throw error;
+      }
 
       const contentPoToken = (await InnertubeLoader.generatePoToken(videoId)).poToken;
-      yt2.getLogger().info(`[ytmusic] Obtained PO token for video #${videoId}: ${contentPoToken}`);
+      yt2.getLogger().info(`[youtube2] Obtained PO token for video #${videoId}: ${contentPoToken}`);
 
-      const info = await innertube.getBasicInfo(videoId, { client, po_token: contentPoToken });
+      let info;
+      try {
+        info = await innertube.getBasicInfo(videoId, { client, po_token: contentPoToken });
+      }
+      catch (error) {
+        // Sometimes getBasicInfo() directly throws error when video is unavailable.
+        // Retry with next client if possible.
+        return await __tryNextClientOnError(error);
+      }
       if (signal?.aborted) {
         throw Error('Aborted');
       }
-      const basicInfo = info.basic_info;
 
-      if (!basicInfo.is_live &&
-        client === 'WEB'
-      ) {
+      const basicInfo = info.basic_info;
+      isLive = !!basicInfo.is_live;
+
+      if (!isLive && client === 'WEB') {
         // For non-live videos, WEB client returns SABR streams which Innertube can't decipher.
-        // We need to switch to WEB_EMBEDDED client wih TV as fallback.
+        // Skip the rest of the processing and retry with WEB_EMBEDDED client (with TV as fallback).
         return await this.getPlaybackInfo(videoId, 'WEB_EMBEDDED', signal);
       }
 
@@ -61,7 +81,7 @@ export default class VideoModel extends BaseModel {
         },
         description: basicInfo.short_description,
         thumbnail: InnertubeResultParser.parseThumbnail(basicInfo.thumbnail) || '',
-        isLive: !!basicInfo.is_live,
+        isLive,
         duration: basicInfo.duration,
         addToHistory: () => {
           return info?.addToWatchHistory();
@@ -77,20 +97,15 @@ export default class VideoModel extends BaseModel {
           }
         }
         else {
-          throw Error(info.playability_status.reason);
+          return await __tryNextClientOnError(new Error(info.playability_status.reason));
         }
       }
-      else if (!result.isLive) {
+      else if (!isLive) {
         try {
           result.stream = await this.#chooseFormat(innertube, info);
         }
         catch (error) {
-          if (error instanceof Utils.PlayerError && client !== 'TV') {
-            // Error with WEB_EMBEDDED client - retry with TV
-            yt2.getLogger().warn(`[youtube2] Error getting stream with ${client} client in VideoModel.getInfo(${videoId}): ${error.message} - retry with 'TV' client.`);
-            return await this.getPlaybackInfo(videoId, 'TV', signal);
-          }
-          throw error;
+          return await __tryNextClientOnError(error);
         }
       }
       else {
@@ -99,7 +114,7 @@ export default class VideoModel extends BaseModel {
         result.stream = streamUrlFromHLS ? { url: streamUrlFromHLS } : null;
       }
 
-      if (result.stream && !result.isLive) {
+      if (result.stream && !isLive) {
         // Innertube sets `pot` searchParam of URL to session-bound PO token.
         // Seems YT now requires `pot` to be the *content-bound* token, otherwise we'll get 403.
         // See: https://github.com/TeamNewPipe/NewPipeExtractor/issues/1392
@@ -113,14 +128,14 @@ export default class VideoModel extends BaseModel {
       // See: https://github.com/yt-dlp/yt-dlp/issues/14097
       if (result.stream) {
         const startTime = new Date().getTime();
-        yt2.getLogger().info(`[youtube2] VideoModel.getInfo(${videoId}): validating stream URL "${result.stream.url}"...`);
+        yt2.getLogger().info(`[youtube2] VideoModel.getPlaybackInfo(${videoId}): validating stream URL "${result.stream.url}"...`);
         let tries = 0;
         let testStreamResult = await this.#head(result.stream.url, signal);
         while (!testStreamResult.ok && tries < 3) {
           if (signal?.aborted) {
             throw Error('Aborted');
           }
-          yt2.getLogger().warn(`[youtube2] VideoModel.getInfo(${videoId}): stream validation failed (${testStreamResult.status} - ${testStreamResult.statusText}); retrying after 2s...`);
+          yt2.getLogger().warn(`[youtube2] VideoModel.getPlaybackInfo(${videoId}): stream validation failed (${testStreamResult.status} - ${testStreamResult.statusText}); retrying after 2s...`);
           await this.#sleep(2000);
           tries++;
           testStreamResult = await this.#head(result.stream.url);
@@ -128,10 +143,10 @@ export default class VideoModel extends BaseModel {
         const endTime = new Date().getTime();
         const timeTaken = (endTime - startTime) / 1000;
         if (tries === 3) {
-          yt2.getLogger().warn(`[youtube2] VideoModel.getInfo(${videoId}): failed to validate stream URL "${result.stream.url}" (retried ${tries} times in ${timeTaken}s).`);
+          yt2.getLogger().warn(`[youtube2] VideoModel.getPlaybackInfo(${videoId}): failed to validate stream URL "${result.stream.url}" (retried ${tries} times in ${timeTaken}s).`);
         }
         else {
-          yt2.getLogger().info(`[youtube2] VideoModel.getInfo(${videoId}): stream validated in ${timeTaken}s.`);
+          yt2.getLogger().info(`[youtube2] VideoModel.getPlaybackInfo(${videoId}): stream validated in ${timeTaken}s.`);
         }
       }
 
@@ -142,7 +157,7 @@ export default class VideoModel extends BaseModel {
       return result;
     }
     catch (error) {
-      yt2.getLogger().error(yt2.getErrorMessage(`[youtube2] Error in VideoModel.getInfo(${videoId}): `, error));
+      yt2.getLogger().error(yt2.getErrorMessage(`[youtube2] Error in VideoModel.getPlaybackInfo(${videoId}): `, error));
       return null;
     }
   }
