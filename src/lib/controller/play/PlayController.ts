@@ -516,7 +516,9 @@ class PrefetchPlaybackStateFixer extends EventEmitter {
       const pf = this.#prefetchedTrack;
       this.#removePushStateListener();
       if (track && state && pf && track.service === 'youtube2' && pf.uri === track.uri) {
+        yt2.getLogger().verbose('[youtube2] PrefetchPlaybackStateFixer: detected playback of prefetched track');
         if (state.uri !== track.uri) {
+          yt2.getLogger().verbose('[youtube2] PrefetchPlaybackStateFixer: force pushState to rectify Volumio state');
           const mpdPlugin = yt2.getMpdPlugin();
           mpdPlugin.getState().then((st: any) => mpdPlugin.pushState(st));
         }
