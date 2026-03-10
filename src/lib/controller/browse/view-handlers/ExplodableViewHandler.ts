@@ -13,6 +13,7 @@ export interface QueueItem {
   title: string;
   duration?: number;
   samplerate?: string;
+  bitdepth?: string;
 }
 
 export interface ExplodedTrackInfo {

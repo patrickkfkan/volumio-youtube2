@@ -124,6 +124,7 @@ export default class PlayController {
     if (playbackInfo.stream?.bitrate) {
       track.samplerate = playbackInfo.stream.bitrate;
     }
+    track.bitdepth = '';
     return track;
   }
 

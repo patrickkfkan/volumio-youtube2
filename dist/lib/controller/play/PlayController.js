@@ -292,6 +292,7 @@ _PlayController_mpdPlugin = new WeakMap(), _PlayController_prefetchPlaybackState
     if (playbackInfo.stream?.bitrate) {
         track.samplerate = playbackInfo.stream.bitrate;
     }
+    track.bitdepth = '';
     return track;
 }, _PlayController_doPlay = function _PlayController_doPlay(streamUrl, track) {
     const mpdPlugin = __classPrivateFieldGet(this, _PlayController_mpdPlugin, "f");
