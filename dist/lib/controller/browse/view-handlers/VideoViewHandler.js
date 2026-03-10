@@ -14,4 +14,3 @@ class VideoViewHandler extends ExplodableViewHandler_1.default {
     }
 }
 exports.default = VideoViewHandler;
-//# sourceMappingURL=VideoViewHandler.js.map

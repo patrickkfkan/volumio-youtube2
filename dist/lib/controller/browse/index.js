@@ -79,4 +79,3 @@ _BrowseController_instances = new WeakSet(), _BrowseController_getHandler = func
     return ViewHandlerFactory_1.default.getHandler(uri);
 };
 exports.default = BrowseController;
-//# sourceMappingURL=index.js.map

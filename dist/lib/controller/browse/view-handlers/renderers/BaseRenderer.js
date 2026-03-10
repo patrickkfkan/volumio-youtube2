@@ -36,4 +36,3 @@ class BaseRenderer {
 }
 _BaseRenderer_uri = new WeakMap(), _BaseRenderer_currentView = new WeakMap(), _BaseRenderer_previousViews = new WeakMap();
 exports.default = BaseRenderer;
-//# sourceMappingURL=BaseRenderer.js.map

@@ -112,4 +112,3 @@ class YouTube2NowPlayingMetadataProvider {
     }
 }
 exports.default = YouTube2NowPlayingMetadataProvider;
-//# sourceMappingURL=YouTube2NowPlayingMetadataProvider.js.map

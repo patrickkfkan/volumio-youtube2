@@ -22,4 +22,3 @@ class PlaylistViewHandler extends GenericViewHandler_1.default {
     }
 }
 exports.default = PlaylistViewHandler;
-//# sourceMappingURL=PlaylistViewHandler.js.map

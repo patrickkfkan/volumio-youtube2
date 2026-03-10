@@ -173,4 +173,3 @@ class ConfigModel extends BaseModel_1.BaseModel {
     }
 }
 exports.default = ConfigModel;
-//# sourceMappingURL=ConfigModel.js.map

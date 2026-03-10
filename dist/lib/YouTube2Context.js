@@ -186,4 +186,3 @@ _YouTube2Context_singletons = new WeakMap(), _YouTube2Context_data = new WeakMap
     __classPrivateFieldGet(this, _YouTube2Context_instances, "m", _YouTube2Context_loadI18n).call(this);
 };
 exports.default = new YouTube2Context();
-//# sourceMappingURL=YouTube2Context.js.map

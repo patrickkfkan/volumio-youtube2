@@ -26,8 +26,8 @@ class OptionValueRenderer extends BaseRenderer_1.default {
     constructor() {
         super(...arguments);
         _OptionValueRenderer_instances.add(this);
-        _OptionValueRenderer_baseUri.set(this, void 0);
-        _OptionValueRenderer_prevUri.set(this, void 0);
+        _OptionValueRenderer_baseUri.set(this, null);
+        _OptionValueRenderer_prevUri.set(this, null);
     }
     renderToListItem(data, opts) {
         const view = this.currentView;
@@ -81,4 +81,3 @@ _OptionValueRenderer_baseUri = new WeakMap(), _OptionValueRenderer_prevUri = new
     return __classPrivateFieldGet(this, _OptionValueRenderer_prevUri, "f");
 };
 exports.default = OptionValueRenderer;
-//# sourceMappingURL=OptionValueRenderer.js.map

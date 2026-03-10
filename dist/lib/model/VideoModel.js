@@ -250,4 +250,3 @@ _VideoModel_instances = new WeakSet(), _VideoModel_sleep = function _VideoModel_
     return closest?.variant.url || playlistVariants[0]?.url || null;
 };
 exports.default = VideoModel;
-//# sourceMappingURL=VideoModel.js.map

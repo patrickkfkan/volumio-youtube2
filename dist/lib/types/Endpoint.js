@@ -10,4 +10,3 @@ var EndpointType;
     EndpointType["WatchContinuation"] = "watchContinuation";
     EndpointType["SearchContinuation"] = "searchContinuation";
 })(EndpointType || (exports.EndpointType = EndpointType = {}));
-//# sourceMappingURL=Endpoint.js.map

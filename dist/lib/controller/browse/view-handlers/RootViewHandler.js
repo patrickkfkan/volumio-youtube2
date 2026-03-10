@@ -63,4 +63,3 @@ class RootViewHandler extends FeedViewHandler_1.default {
     }
 }
 exports.default = RootViewHandler;
-//# sourceMappingURL=RootViewHandler.js.map

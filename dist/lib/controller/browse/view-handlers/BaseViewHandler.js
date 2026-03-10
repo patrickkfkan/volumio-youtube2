@@ -180,4 +180,3 @@ _BaseViewHandler_uri = new WeakMap(), _BaseViewHandler_currentView = new WeakMap
     return segments.join('/');
 };
 exports.default = BaseViewHandler;
-//# sourceMappingURL=BaseViewHandler.js.map

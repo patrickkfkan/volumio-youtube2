@@ -20,4 +20,3 @@ class ExplodableViewHandler extends BaseViewHandler_1.default {
     }
 }
 exports.default = ExplodableViewHandler;
-//# sourceMappingURL=ExplodableViewHandler.js.map

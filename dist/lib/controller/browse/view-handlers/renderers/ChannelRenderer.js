@@ -40,4 +40,3 @@ class ChannelRenderer extends BaseRenderer_1.default {
     }
 }
 exports.default = ChannelRenderer;
-//# sourceMappingURL=ChannelRenderer.js.map

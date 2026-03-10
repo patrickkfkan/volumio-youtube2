@@ -62,4 +62,3 @@ class InnertubeLoader {
 _a = InnertubeLoader;
 _InnertubeLoader_instancePromise = { value: null };
 exports.default = InnertubeLoader;
-//# sourceMappingURL=InnertubeLoader.js.map

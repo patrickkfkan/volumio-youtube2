@@ -75,4 +75,3 @@ _OptionRenderer_instances = new WeakSet(), _OptionRenderer_renderContinuationBun
     return ViewHelper_1.default.constructUriSegmentFromView(genericView);
 };
 exports.default = OptionRenderer;
-//# sourceMappingURL=OptionRenderer.js.map

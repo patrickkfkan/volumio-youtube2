@@ -15,8 +15,8 @@ interface OptionValueRendererListItemOptions {
 
 export default class OptionValueRenderer extends BaseRenderer<PageElement.Option['optionValues'][0]> {
 
-  #baseUri: string;
-  #prevUri: string;
+  #baseUri: string | null = null;
+  #prevUri: string | null = null;
 
   renderToListItem(data: PageElement.Option['optionValues'][0], opts?: OptionValueRendererListItemOptions): RenderedListItem | null {
     const view = this.currentView;

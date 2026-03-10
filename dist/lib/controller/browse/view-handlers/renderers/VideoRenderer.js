@@ -25,4 +25,3 @@ class VideoRenderer extends BaseRenderer_1.default {
     }
 }
 exports.default = VideoRenderer;
-//# sourceMappingURL=VideoRenderer.js.map

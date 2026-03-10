@@ -65,4 +65,3 @@ async function getAccountInitialInfo(innertube) {
         active
     };
 }
-//# sourceMappingURL=AccountModelHelper.js.map

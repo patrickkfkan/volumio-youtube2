@@ -17,4 +17,3 @@ class SearchModel extends EndpointModel_1.default {
     }
 }
 exports.default = SearchModel;
-//# sourceMappingURL=SearchModel.js.map

@@ -37,4 +37,3 @@ exports.PluginConfig = exports.PageElement = exports.ContentItem = void 0;
 exports.ContentItem = __importStar(require("./ContentItem"));
 exports.PageElement = __importStar(require("./PageElement"));
 exports.PluginConfig = __importStar(require("./PluginConfig"));
-//# sourceMappingURL=index.js.map

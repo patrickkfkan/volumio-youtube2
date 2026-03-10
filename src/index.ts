@@ -29,11 +29,11 @@ class ControllerYouTube2 implements NowPlayingPluginSupport {
   #config: any;
   #commandRouter: any;
 
-  #browseController: BrowseController | null;
-  #searchController: SearchController | null;
-  #playController: PlayController | null;
+  #browseController: BrowseController | null = null;
+  #searchController: SearchController | null = null;
+  #playController: PlayController | null = null;
 
-  #nowPlayingMetadataProvider: YouTube2NowPlayingMetadataProvider | null;
+  #nowPlayingMetadataProvider: YouTube2NowPlayingMetadataProvider | null = null;
 
   constructor(context: any) {
     this.#context = context;

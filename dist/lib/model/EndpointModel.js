@@ -39,4 +39,3 @@ _EndpointModel_instances = new WeakSet(), _EndpointModel_doGetContents = async f
     return InnertubeResultParser_1.default.parseResult(parsed, endpoint); // Second parse
 };
 exports.default = EndpointModel;
-//# sourceMappingURL=EndpointModel.js.map

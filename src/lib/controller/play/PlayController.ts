@@ -466,6 +466,7 @@ class PrefetchPlaybackStateFixer extends EventEmitter {
     super();
     this.#positionAtPrefetch = -1;
     this.#prefetchedTrack = null;
+    this.#volumioPushStateListener = null;
   }
 
   reset() {

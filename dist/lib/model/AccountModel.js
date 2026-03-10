@@ -48,4 +48,3 @@ _AccountModel_instances = new WeakSet(), _AccountModel_getChannelInfo = async fu
     return null;
 };
 exports.default = AccountModel;
-//# sourceMappingURL=AccountModel.js.map

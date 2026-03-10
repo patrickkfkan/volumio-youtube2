@@ -59,4 +59,3 @@ class SubscriptionsViewHandler extends GenericViewHandler_1.default {
     }
 }
 exports.default = SubscriptionsViewHandler;
-//# sourceMappingURL=SubscriptionsViewHandler.js.map

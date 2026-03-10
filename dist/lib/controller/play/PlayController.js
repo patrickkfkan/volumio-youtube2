@@ -454,6 +454,7 @@ class PrefetchPlaybackStateFixer extends events_1.default {
         _PrefetchPlaybackStateFixer_volumioPushStateListener.set(this, void 0);
         __classPrivateFieldSet(this, _PrefetchPlaybackStateFixer_positionAtPrefetch, -1, "f");
         __classPrivateFieldSet(this, _PrefetchPlaybackStateFixer_prefetchedTrack, null, "f");
+        __classPrivateFieldSet(this, _PrefetchPlaybackStateFixer_volumioPushStateListener, null, "f");
     }
     reset() {
         __classPrivateFieldGet(this, _PrefetchPlaybackStateFixer_instances, "m", _PrefetchPlaybackStateFixer_removePushStateListener).call(this);
@@ -514,4 +515,3 @@ _PrefetchPlaybackStateFixer_positionAtPrefetch = new WeakMap(), _PrefetchPlaybac
         }
     }
 };
-//# sourceMappingURL=PlayController.js.map

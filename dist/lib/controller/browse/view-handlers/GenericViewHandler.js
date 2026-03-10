@@ -106,4 +106,3 @@ class GenericViewHandler extends FeedViewHandler_1.default {
     }
 }
 exports.default = GenericViewHandler;
-//# sourceMappingURL=GenericViewHandler.js.map

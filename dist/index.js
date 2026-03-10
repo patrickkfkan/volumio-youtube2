@@ -70,10 +70,10 @@ class ControllerYouTube2 {
         _ControllerYouTube2_context.set(this, void 0);
         _ControllerYouTube2_config.set(this, void 0);
         _ControllerYouTube2_commandRouter.set(this, void 0);
-        _ControllerYouTube2_browseController.set(this, void 0);
-        _ControllerYouTube2_searchController.set(this, void 0);
-        _ControllerYouTube2_playController.set(this, void 0);
-        _ControllerYouTube2_nowPlayingMetadataProvider.set(this, void 0);
+        _ControllerYouTube2_browseController.set(this, null);
+        _ControllerYouTube2_searchController.set(this, null);
+        _ControllerYouTube2_playController.set(this, null);
+        _ControllerYouTube2_nowPlayingMetadataProvider.set(this, null);
         __classPrivateFieldSet(this, _ControllerYouTube2_context, context, "f");
         __classPrivateFieldSet(this, _ControllerYouTube2_commandRouter, context.coreCommand, "f");
     }
@@ -505,4 +505,3 @@ _ControllerYouTube2_context = new WeakMap(), _ControllerYouTube2_config = new We
     __classPrivateFieldGet(this, _ControllerYouTube2_commandRouter, "f").volumioAddToBrowseSources(source);
 };
 module.exports = ControllerYouTube2;
-//# sourceMappingURL=index.js.map

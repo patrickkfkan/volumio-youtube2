@@ -92,4 +92,3 @@ class ViewHelper {
     }
 }
 exports.default = ViewHelper;
-//# sourceMappingURL=ViewHelper.js.map

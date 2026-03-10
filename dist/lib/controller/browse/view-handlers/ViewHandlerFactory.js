@@ -32,4 +32,3 @@ class ViewHandlerFactory {
     }
 }
 exports.default = ViewHandlerFactory;
-//# sourceMappingURL=ViewHandlerFactory.js.map
