@@ -165,7 +165,7 @@ export default class PlayController {
     return yt2.getStateMachine().previous();
   }
 
-  static async getPlaybackInfoFromUri(uri: string, signal?: AbortSignal): Promise<{videoId: string; info: VideoPlaybackInfo | null}> {
+  static async getPlaybackInfoFromUri(uri: string, isPrefetch = false, signal?: AbortSignal): Promise<{videoId: string; info: VideoPlaybackInfo | null}> {
     const watchEndpoint = ExplodeHelper.getExplodedTrackInfoFromUri(uri)?.endpoint;
     const videoId = watchEndpoint?.payload?.videoId;
     if (!videoId) {
@@ -175,7 +175,7 @@ export default class PlayController {
     const model = Model.getInstance(ModelType.Video);
     return {
       videoId,
-      info: await model.getPlaybackInfo(videoId, undefined, signal)
+      info: await model.getPlaybackInfo(videoId, isPrefetch, undefined, signal)
     };
   }
 
@@ -399,7 +399,7 @@ export default class PlayController {
     this.#prefetchAborter = new AbortController();
     const signal = this.#prefetchAborter.signal;
     try {
-      const { videoId, info: playbackInfo } = await PlayController.getPlaybackInfoFromUri(track.uri, signal);
+      const { videoId, info: playbackInfo } = await PlayController.getPlaybackInfoFromUri(track.uri, true, signal);
       streamUrl = playbackInfo?.stream?.url;
       if (!streamUrl || !playbackInfo) {
         throw Error(`Stream not found for videoId '${videoId}'`);

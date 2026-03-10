@@ -27,22 +27,57 @@ interface HLSPlaylistVariant {
   url?: string;
 }
 
-const CLIENTS = [
+
+// Clients:
+// WEB_EMBEDDED now throws "This video is unavailable" error.
+// MWEB and Tv still work.
+
+// When signed in, prefer TV to MWEB. MWEB streams have a 4-second delay before they
+// become valid.
+const CLIENTS_WHEN_SIGNED_IN = [
   'WEB',
-  // WEB_EMBEDDED now throws "This video is unavailable" error.
-  // MWEB and TV still works.
+  'TV',
+  'MWEB'
+] as const;
+
+const CLIENTS_WHEN_SIGNED_IN_AND_PREFETCH = [
+  'WEB',
+  'TV'
+  // No MWEB here, because of the 4-second delay.
+  // This delay coupled with the actual fetch time is enough to screw up
+  // prefetching in Volumio.
+] as const;
+
+const CLIENTS_WHEN_SIGNED_OUT = [
+  'WEB',
   'MWEB',
   'TV'
 ] as const;
 
+type CLIENT = 'WEB' | 'MWEB' | 'TV';
+
 export default class VideoModel extends BaseModel {
 
-  async getPlaybackInfo(videoId: string, client?: typeof CLIENTS[number], signal?: AbortSignal): Promise<VideoPlaybackInfo | null> {
+  async getPlaybackInfo(
+    videoId: string,
+    isPrefetch = false,
+    client?: CLIENT,
+    signal?: AbortSignal
+  ): Promise<VideoPlaybackInfo | null> {
     const { innertube } = await this.getInnertube();
+    let availableClients;
+    if (innertube.session.logged_in) {
+      availableClients = isPrefetch ? CLIENTS_WHEN_SIGNED_IN_AND_PREFETCH : CLIENTS_WHEN_SIGNED_IN;
+    }
+    else if (!isPrefetch) {
+      availableClients = CLIENTS_WHEN_SIGNED_OUT;
+    }
+    else {
+      throw Error('Prefetch is not supported when signed out');
+    }
     let isLive = false;
     try {
-      client = client ?? CLIENTS[0];
-
+      client = client ?? availableClients[0];
       const __tryNextClientOnError = async (error: any, obtainedInfo?: YT.VideoInfo) => {
         if (obtainedInfo) {
           yt2.getLogger().warn(`[youtube2] Error getting playback info with ${client} client. The playability status of the target is: ${JSON.stringify(obtainedInfo.playability_status, null, 2)}`);
@@ -50,13 +85,13 @@ export default class VideoModel extends BaseModel {
         else {
           yt2.getLogger().warn(`[youtube2] Error getting playback info with ${client} client`);
         }
-        const clientIndex = CLIENTS.indexOf(client!);
-        if (clientIndex < CLIENTS.length - 1) {
-          const nextClient = CLIENTS[clientIndex + 1];
+        const clientIndex = availableClients.indexOf(client as any);
+        if (clientIndex < availableClients.length - 1) {
+          const nextClient = availableClients[clientIndex + 1];
           yt2.getLogger().warn(yt2.getErrorMessage(`[youtube2] Got error in VideoModel.getPlaybackInfo(${videoId}):`, error, false));
           yt2.getLogger().warn(`[youtube2] Going to retry with '${nextClient}' client`)
 
-          return await this.getPlaybackInfo(videoId, nextClient, signal);
+          return await this.getPlaybackInfo(videoId, isPrefetch, nextClient, signal);
         }
         throw error;
       }
@@ -96,9 +131,9 @@ export default class VideoModel extends BaseModel {
       isLive = !!basicInfo.is_live;
 
       if (!isLive && client === 'WEB') {
-        // For non-live videos, WEB client returns SABR streams which Innertube can't decipher.
-        // Skip the rest of the processing and retry with MWEB client (with TV as fallback).
-        return await this.getPlaybackInfo(videoId, 'MWEB', signal);
+        // For non-live videos, WEB client returns SABR streams which Volumio doesn't support.
+        // Proceed to the next client.
+        return await this.getPlaybackInfo(videoId, isPrefetch, availableClients[1], signal);
       }
 
       const result: VideoPlaybackInfo = {

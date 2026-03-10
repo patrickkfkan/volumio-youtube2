@@ -137,6 +137,7 @@ class ControllerYouTube2 implements NowPlayingPluginSupport {
         playbackUIConf.content[4].options = liveStreamQualityOptions;
         playbackUIConf.content[4].value = liveStreamQualityOptions.find((o) => o.value === liveStreamQuality);
         playbackUIConf.content[5].value = prefetchEnabled;
+        playbackUIConf.content[5].hidden = !account?.isSignedIn;
 
         // YouTube Playback Mode
         const ytPlaybackMode = yt2.getConfigValue('ytPlaybackMode');
