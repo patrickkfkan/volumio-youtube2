@@ -27,7 +27,13 @@ interface HLSPlaylistVariant {
   url?: string;
 }
 
-const CLIENTS = ['WEB', 'WEB_EMBEDDED', 'TV'] as const;
+const CLIENTS = [
+  'WEB',
+  // WEB_EMBEDDED now throws "This video is unavailable" error.
+  // MWEB and TV still works.
+  'MWEB',
+  'TV'
+] as const;
 
 export default class VideoModel extends BaseModel {
 
@@ -37,22 +43,45 @@ export default class VideoModel extends BaseModel {
     try {
       client = client ?? CLIENTS[0];
 
-      const __tryNextClientOnError = async (error: any) => {
+      const __tryNextClientOnError = async (error: any, obtainedInfo?: YT.VideoInfo) => {
+        if (obtainedInfo) {
+          yt2.getLogger().warn(`[youtube2] Error getting playback info with ${client} client. The playability status of the target is: ${JSON.stringify(obtainedInfo.playability_status, null, 2)}`);
+        }
+        else {
+          yt2.getLogger().warn(`[youtube2] Error getting playback info with ${client} client`);
+        }
         const clientIndex = CLIENTS.indexOf(client!);
         if (clientIndex < CLIENTS.length - 1) {
           const nextClient = CLIENTS[clientIndex + 1];
-          yt2.getLogger().warn(`[youtube2] Error getting video info with ${client} client in VideoModel.getPlaybackInfo(${videoId}): ${yt2.getErrorMessage('', error, false)} - retry with '${nextClient}' client.`);
+          yt2.getLogger().warn(yt2.getErrorMessage(`[youtube2] Got error in VideoModel.getPlaybackInfo(${videoId}):`, error, false));
+          yt2.getLogger().warn(`[youtube2] Going to retry with '${nextClient}' client`)
+
           return await this.getPlaybackInfo(videoId, nextClient, signal);
         }
         throw error;
       }
 
-      const contentPoToken = (await InnertubeLoader.generatePoToken(videoId)).poToken;
-      yt2.getLogger().info(`[youtube2] Obtained PO token for video #${videoId}: ${contentPoToken}`);
+      let contentPoToken: string | undefined = undefined;
+      try {
+        contentPoToken = (await InnertubeLoader.generatePoToken(videoId)).poToken;
+        yt2.getLogger().info(`[youtube2] Obtained PO token for video #${videoId}: ${contentPoToken}`);
+      }
+      catch (error: unknown) {
+        yt2.getLogger().error(yt2.getErrorMessage(`[youtube2] Error obtaining PO token for video #${videoId}:`,error, false));
+      }
+
+      let sessionPoToken: string | undefined;
+      try {
+        sessionPoToken = (await (await InnertubeLoader.getInstance()).getSessionPoToken())?.poToken;
+      }
+      catch (error: unknown) {
+        yt2.getLogger().error(yt2.getErrorMessage(`[youtube2] Error obtaining PO token for session:`,error, false));
+        sessionPoToken = undefined;
+      }
 
       let info;
       try {
-        info = await innertube.getBasicInfo(videoId, { client, po_token: contentPoToken });
+        info = await innertube.getBasicInfo(videoId, { client, po_token: sessionPoToken });
       }
       catch (error) {
         // Sometimes getBasicInfo() directly throws error when video is unavailable.
@@ -68,8 +97,8 @@ export default class VideoModel extends BaseModel {
 
       if (!isLive && client === 'WEB') {
         // For non-live videos, WEB client returns SABR streams which Innertube can't decipher.
-        // Skip the rest of the processing and retry with WEB_EMBEDDED client (with TV as fallback).
-        return await this.getPlaybackInfo(videoId, 'WEB_EMBEDDED', signal);
+        // Skip the rest of the processing and retry with MWEB client (with TV as fallback).
+        return await this.getPlaybackInfo(videoId, 'MWEB', signal);
       }
 
       const result: VideoPlaybackInfo = {
@@ -97,7 +126,7 @@ export default class VideoModel extends BaseModel {
           }
         }
         else {
-          return await __tryNextClientOnError(new Error(info.playability_status.reason));
+          return await __tryNextClientOnError(new Error(info.playability_status.reason), info);
         }
       }
       else if (!isLive) {
@@ -105,7 +134,7 @@ export default class VideoModel extends BaseModel {
           result.stream = await this.#chooseFormat(innertube, info);
         }
         catch (error) {
-          return await __tryNextClientOnError(error);
+          return await __tryNextClientOnError(error, info);
         }
       }
       else {
@@ -119,7 +148,9 @@ export default class VideoModel extends BaseModel {
         // Seems YT now requires `pot` to be the *content-bound* token, otherwise we'll get 403.
         // See: https://github.com/TeamNewPipe/NewPipeExtractor/issues/1392
         const urlObj = new URL(result.stream.url);
-        urlObj.searchParams.set('pot', contentPoToken);
+        if (contentPoToken) {
+          urlObj.searchParams.set('pot', contentPoToken);
+        }
         result.stream.url = urlObj.toString();
       }
 
@@ -127,6 +158,7 @@ export default class VideoModel extends BaseModel {
       // We add a test routine here and sleep for a while between retries
       // See: https://github.com/yt-dlp/yt-dlp/issues/14097
       if (result.stream) {
+        yt2.getLogger().info(`[youtube2] Got stream with ${client} client`);
         const startTime = new Date().getTime();
         yt2.getLogger().info(`[youtube2] VideoModel.getPlaybackInfo(${videoId}): validating stream URL "${result.stream.url}"...`);
         let tries = 0;

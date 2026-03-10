@@ -1,5 +1,5 @@
 import yt2 from '../YouTube2Context';
-import { InnertubeFactory, type InnertubeWrapper, type PotFnResult } from 'volumio-yt-support';
+import { InnertubeFactory, type InnertubeWrapper, type PoTokenData } from 'volumio-yt-support';
 
 export default class InnertubeLoader {
 
@@ -27,7 +27,7 @@ export default class InnertubeLoader {
     return this.#instancePromise;
   }
 
-  static async generatePoToken(identifier: string): Promise<PotFnResult> {
+  static async generatePoToken(identifier: string): Promise<PoTokenData> {
     const instance = await this.getInstance();
     return await instance.generatePoToken(identifier);
   }
