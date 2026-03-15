@@ -108,6 +108,13 @@
           "value": ""
         },
         {
+          "id": "activeChannelHandle",
+          "element": "select",
+          "label": "TRANSLATE.YOUTUBE2_ACTIVE_CHANNEL",
+          "value": {},
+          "options": []
+        },
+        {
           "id": "cookieGuide",
           "element": "button",
           "label": "TRANSLATE.YOUTUBE2_COOKIE_GUIDE",

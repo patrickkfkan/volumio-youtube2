@@ -19,6 +19,7 @@ import { type NowPlayingPluginSupport } from 'now-playing-common';
 import YouTube2NowPlayingMetadataProvider from './lib/util/YouTube2NowPlayingMetadataProvider';
 import { Parser } from 'volumio-yt-support/dist/innertube';
 import { existsSync, readFileSync } from 'fs';
+import UIConfigHelper from './config/UIConfigHelper';
 
 interface GotoParams extends QueueItem {
   type: 'album' | 'artist';
@@ -41,118 +42,110 @@ class ControllerYouTube2 implements NowPlayingPluginSupport {
   }
 
   getUIConfig() {
-    const defer = libQ.defer();
+    return jsPromiseToKew(this.#doGetUIConfig()).fail((error: any) => {
+      yt2
+        .getLogger()
+        .error(`[youtube2] getUIConfig(): Cannot populate configuration - ${error}`);
+      throw error;
+    });
+  }
 
+  async #doGetUIConfig() {
     const hasAcceptedDisclaimer = yt2.getConfigValue('hasAcceptedDisclaimer');
     const langCode = this.#commandRouter.sharedVars.get('language_code');
-    const loadConfigPromises = [
-      kewToJSPromise(this.#commandRouter.i18nJson(`${__dirname}/i18n/strings_${langCode}.json`,
+    const _uiconf = await kewToJSPromise(
+      this.#commandRouter.i18nJson(
+        `${__dirname}/i18n/strings_${langCode}.json`,
         `${__dirname}/i18n/strings_en.json`,
-        `${__dirname}/UIConfig.json`)),
-      hasAcceptedDisclaimer ? this.#getConfigI18nOptions() : Promise.resolve(null),
-      hasAcceptedDisclaimer ? this.#getConfigAccountInfo() : Promise.resolve(null)
-    ] as const;
-
+        `${__dirname}/UIConfig.json`
+      )
+    );
+    const i18nOptions = hasAcceptedDisclaimer ? await this.#getConfigI18nOptions() : null;
+    const account = hasAcceptedDisclaimer ? await this.#getConfigAccountInfo() : null;
     const configModel = Model.getInstance(ModelType.Config);
+    const uiconf = UIConfigHelper.observe(_uiconf);
 
-    Promise.all(loadConfigPromises)
-      .then(([ uiconf, i18nOptions, account ]) => {
-        const disclaimerUIConf = uiconf.sections[0];
-        const i18nUIConf = uiconf.sections[1];
-        const accountUIConf = uiconf.sections[2];
-        const browseUIConf = uiconf.sections[3];
-        const playbackUIConf = uiconf.sections[4];
-        const ytPlaybackModeConf = uiconf.sections[5];
+    const disclaimerUIConf = uiconf.section_disclaimer;
+    const i18nUIConf = uiconf.section_i18n;
+    const accountUIConf = uiconf.section_account;
+    const browseUIConf = uiconf.section_browse;
+    const playbackUIConf = uiconf.section_playback;
+    const ytPlaybackModeConf = uiconf.section_yt_playback_mode;
 
-        // Disclaimer
-        disclaimerUIConf.content[1].value = hasAcceptedDisclaimer;
+    // Disclaimer
+    disclaimerUIConf.content[1].value = hasAcceptedDisclaimer;
 
-        if (!hasAcceptedDisclaimer) {
-          // hasAcceptedDisclaimer is false
-          uiconf.sections = [ disclaimerUIConf ];
-          return defer.resolve(uiconf);
-        }
-        // I18n
-        // -- region
-        i18nUIConf.content[0].label = i18nOptions!.options.region?.label;
-        i18nUIConf.content[0].options = i18nOptions!.options.region?.optionValues;
-        i18nUIConf.content[0].value = i18nOptions!.selected.region;
-        i18nUIConf.content[1].label = i18nOptions!.options.language?.label;
-        i18nUIConf.content[1].options = i18nOptions!.options.language?.optionValues;
-        i18nUIConf.content[1].value = i18nOptions!.selected.language;
+    if (!hasAcceptedDisclaimer) {
+      // hasAcceptedDisclaimer is false
+      uiconf.sections = [ disclaimerUIConf ];
+      return uiconf;
+    }
+    // I18n
+    // -- region
+    i18nUIConf.content.region.label = i18nOptions!.options.region?.label || '';
+    i18nUIConf.content.region.options = i18nOptions!.options.region?.optionValues || [];
+    i18nUIConf.content.region.value = i18nOptions!.selected.region;
+    i18nUIConf.content.language.label = i18nOptions!.options.language?.label || '';
+    i18nUIConf.content.language.options = i18nOptions!.options.language?.optionValues || [];
+    i18nUIConf.content.language.value = i18nOptions!.selected.language;
 
-        // Account
-        const cookie = yt2.getConfigValue('cookie');
-        let authStatusDescription;
-        if (account?.isSignedIn && account.active) {
-          authStatusDescription = yt2.getI18n('YOUTUBE2_AUTH_STATUS_SIGNED_IN_AS', account.active.name);
-          if (account.list.length > 1) {
-            const accountSelect = {
-              id: 'activeChannelHandle',
-              element: 'select',
-              label: yt2.getI18n('YOUTUBE2_ACTIVE_CHANNEL'),
-              value: {
-                label: account.active.name,
-                value: account.active.handle
-              },
-              options: account.list.map((ac) => ({
-                label: ac.name,
-                value: ac.handle
-              }))
-            };
-            accountUIConf.content = [
-              accountUIConf.content[0],
-              accountSelect,
-              ...accountUIConf.content.slice(1)
-            ];
-            accountUIConf.saveButton.data.push('activeChannelHandle');
-          }
-        }
-        else if (cookie) {
-          authStatusDescription = yt2.getI18n('YOUTUBE2_AUTH_STATUS_SIGNED_OUT');
-        }
-        accountUIConf.description = authStatusDescription;
-        accountUIConf.content[0].value = cookie;
-
-        // Browse
-        const rootContentType = yt2.getConfigValue('rootContentType');
-        const rootContentTypeOptions = configModel.getRootContentTypeOptions();
-        const loadFullPlaylists = yt2.getConfigValue('loadFullPlaylists');
-        browseUIConf.content[0].options = rootContentTypeOptions;
-        browseUIConf.content[0].value = rootContentTypeOptions.find((o) => o.value === rootContentType);
-        browseUIConf.content[1].value = loadFullPlaylists;
-
-        // Playback
-        const autoplay = yt2.getConfigValue('autoplay');
-        const autoplayClearQueue = yt2.getConfigValue('autoplayClearQueue');
-        const autoplayPrefMixRelated = yt2.getConfigValue('autoplayPrefMixRelated');
-        const addToHistory = yt2.getConfigValue('addToHistory');
-        const liveStreamQuality = yt2.getConfigValue('liveStreamQuality');
-        const liveStreamQualityOptions = configModel.getLiveStreamQualityOptions();
-        const prefetchEnabled = yt2.getConfigValue('prefetch');
-        playbackUIConf.content[0].value = autoplay;
-        playbackUIConf.content[1].value = autoplayClearQueue;
-        playbackUIConf.content[2].value = autoplayPrefMixRelated;
-        playbackUIConf.content[3].value = addToHistory;
-        playbackUIConf.content[4].options = liveStreamQualityOptions;
-        playbackUIConf.content[4].value = liveStreamQualityOptions.find((o) => o.value === liveStreamQuality);
-        playbackUIConf.content[5].value = prefetchEnabled;
-        playbackUIConf.content[5].hidden = !account?.isSignedIn;
-
-        // YouTube Playback Mode
-        const ytPlaybackMode = yt2.getConfigValue('ytPlaybackMode');
-        ytPlaybackModeConf.content[0].value = ytPlaybackMode.feedVideos;
-        ytPlaybackModeConf.content[1].value = ytPlaybackMode.playlistVideos;
-
-        defer.resolve(uiconf);
-      })
-      .catch((error: unknown) => {
-        yt2.getLogger().error(yt2.getErrorMessage(`[youtube2] getUIConfig(): Cannot populate YouTube2 configuration:`, error));
-        defer.reject(Error());
+    // Account
+    const cookie = yt2.getConfigValue('cookie');
+    let authStatusDescription;
+    if (!account?.isSignedIn || !account.active || account.list.length <= 1) {
+        accountUIConf.content.activeChannelHandle.hidden = true;
+    }
+    if (account?.isSignedIn && account.active) {
+      authStatusDescription = yt2.getI18n('YOUTUBE2_AUTH_STATUS_SIGNED_IN_AS', account.active.name);
+      if (account.list.length > 1) {
+        accountUIConf.content.activeChannelHandle.value ={
+          label: account.active.name,
+          value: account.active.handle
+        };
+        accountUIConf.content.activeChannelHandle.options = account.list.map((ac) => ({
+          label: ac.name,
+          value: ac.handle
+        }));
+        (accountUIConf.saveButton!.data as string[]).push('activeChannelHandle');
       }
-      );
+    }
+    else if (cookie) {
+      authStatusDescription = yt2.getI18n('YOUTUBE2_AUTH_STATUS_SIGNED_OUT');
+    }
+    accountUIConf.description = authStatusDescription;
+    accountUIConf.content.cookie.value = cookie;
 
-    return defer.promise;
+    // Browse
+    const rootContentType = yt2.getConfigValue('rootContentType');
+    const rootContentTypeOptions = configModel.getRootContentTypeOptions();
+    const loadFullPlaylists = yt2.getConfigValue('loadFullPlaylists');
+    browseUIConf.content.rootContentType.options = rootContentTypeOptions;
+    browseUIConf.content.rootContentType.value = rootContentTypeOptions.find((o) => o.value === rootContentType) || rootContentTypeOptions[0];
+    browseUIConf.content.loadFullPlaylists.value = loadFullPlaylists;
+
+    // Playback
+    const autoplay = yt2.getConfigValue('autoplay');
+    const autoplayClearQueue = yt2.getConfigValue('autoplayClearQueue');
+    const autoplayPrefMixRelated = yt2.getConfigValue('autoplayPrefMixRelated');
+    const addToHistory = yt2.getConfigValue('addToHistory');
+    const liveStreamQuality = yt2.getConfigValue('liveStreamQuality');
+    const liveStreamQualityOptions = configModel.getLiveStreamQualityOptions();
+    const prefetchEnabled = yt2.getConfigValue('prefetch');
+    playbackUIConf.content.autoplay.value = autoplay;
+    playbackUIConf.content.autoplayClearQueue.value = autoplayClearQueue;
+    playbackUIConf.content.autoplayPrefMixRelated.value = autoplayPrefMixRelated;
+    playbackUIConf.content.addToHistory.value = addToHistory;
+    playbackUIConf.content.liveStreamQuality.options = liveStreamQualityOptions;
+    playbackUIConf.content.liveStreamQuality.value = liveStreamQualityOptions.find((o) => o.value === liveStreamQuality) || liveStreamQualityOptions[0];
+    playbackUIConf.content.prefetch.value = prefetchEnabled;
+    playbackUIConf.content.prefetch.hidden = !account?.isSignedIn;
+
+    // YouTube Playback Mode
+    const ytPlaybackMode = yt2.getConfigValue('ytPlaybackMode');
+    ytPlaybackModeConf.content.feedVideos.value = ytPlaybackMode.feedVideos;
+    ytPlaybackModeConf.content.playlistVideos.value = ytPlaybackMode.playlistVideos;
+
+    return uiconf;
   }
 
   onVolumioStart() {
