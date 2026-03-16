@@ -106,12 +106,9 @@ export default class PlayController {
     await this.#doPlay(safeStreamUrl, track);
 
     if (yt2.getConfigValue('addToHistory')) {
-      try {
-        void playbackInfo.addToHistory();
-      }
-      catch (error) {
+      playbackInfo.addToHistory().catch((error: unknown) => {
         yt2.getLogger().error(yt2.getErrorMessage(`[youtube2-play] Error: could not add to history (videoId: ${videoId}): `, error));
-      }
+      });
     }
   }
 
@@ -165,7 +162,7 @@ export default class PlayController {
     return yt2.getStateMachine().previous();
   }
 
-  static async getPlaybackInfoFromUri(uri: string, isPrefetch = false, signal?: AbortSignal): Promise<{videoId: string; info: VideoPlaybackInfo | null}> {
+  static async getPlaybackInfoFromUri(uri: string, isPrefetch = false, skipStream = false, signal?: AbortSignal): Promise<{videoId: string; info: VideoPlaybackInfo | null}> {
     const watchEndpoint = ExplodeHelper.getExplodedTrackInfoFromUri(uri)?.endpoint;
     const videoId = watchEndpoint?.payload?.videoId;
     if (!videoId) {
@@ -175,7 +172,7 @@ export default class PlayController {
     const model = Model.getInstance(ModelType.Video);
     return {
       videoId,
-      info: await model.getPlaybackInfo(videoId, isPrefetch, undefined, signal)
+      info: await model.getPlaybackInfo(videoId, isPrefetch, skipStream, signal)
     };
   }
 
@@ -313,7 +310,7 @@ export default class PlayController {
     if (autoplayItems.length === 0 && contents?.autoplay?.payload?.videoId) {
       const videoModel = Model.getInstance(ModelType.Video);
       // Contents.autoplay is just an endpoint, so we need to get video info (title, author...) from it
-      const playbackInfo = await videoModel.getPlaybackInfo(contents.autoplay.payload.videoId);
+      const playbackInfo = await videoModel.getPlaybackInfo(contents.autoplay.payload.videoId, false, true);
       if (playbackInfo && playbackInfo.title && playbackInfo.author?.name) {
         autoplayItems.push({
           title: playbackInfo.title,
@@ -352,7 +349,7 @@ export default class PlayController {
       const videoId = ExplodeHelper.getExplodedTrackInfoFromUri(uri)?.endpoint?.payload?.videoId;
       if (videoId) {
         const model = Model.getInstance(ModelType.Video);
-        const playbackInfo = await model.getPlaybackInfo(videoId);
+        const playbackInfo = await model.getPlaybackInfo(videoId, false, true);
         const channelId = playbackInfo?.author?.channelId;
         if (channelId) {
           const targetView: GenericView = {
@@ -399,7 +396,7 @@ export default class PlayController {
     this.#prefetchAborter = new AbortController();
     const signal = this.#prefetchAborter.signal;
     try {
-      const { videoId, info: playbackInfo } = await PlayController.getPlaybackInfoFromUri(track.uri, true, signal);
+      const { videoId, info: playbackInfo } = await PlayController.getPlaybackInfoFromUri(track.uri, true, false, signal);
       streamUrl = playbackInfo?.stream?.url;
       if (!streamUrl || !playbackInfo) {
         throw Error(`Stream not found for videoId '${videoId}'`);

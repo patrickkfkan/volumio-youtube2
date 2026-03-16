@@ -4,6 +4,7 @@ import type VideoPlaybackInfo from '../types/VideoPlaybackInfo';
 import { BaseModel } from './BaseModel';
 import InnertubeResultParser from './InnertubeResultParser';
 import InnertubeLoader from './InnertubeLoader';
+import { YtDlpWrapper } from '../util/YtDlp';
 
 // https://gist.github.com/sidneys/7095afe4da4ae58694d128b1034e01e2
 const ITAG_TO_BITRATE: Record<string, string> = {
@@ -61,6 +62,41 @@ export default class VideoModel extends BaseModel {
   async getPlaybackInfo(
     videoId: string,
     isPrefetch = false,
+    skipStream = false,
+    signal?: AbortSignal
+  ) {
+    const useYtDlp = yt2.getConfigValue('useYtDlp');
+    if (useYtDlp && isPrefetch) {
+      throw Error(`Cannot prefetch with yt-dlp as time taken will exceed Volumio's limit`);
+    }
+    if (!skipStream && useYtDlp) {
+      const [info, url] = await Promise.all([
+        this.#doGetPlaybackInfo(videoId, isPrefetch, true, undefined, signal),
+        YtDlpWrapper.getInstance().getStreamingUrl(
+          `https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`,
+          yt2.getConfigValue('ytDlpVersion') ?? undefined
+        ).catch((error: unknown) => {
+          yt2.getLogger().error(yt2.getErrorMessage('Failed to get streaming URL with yt-dlp:', error, false));
+          return null;
+        })
+      ]);
+      if (info && url) {
+        const itag = new URL(url).searchParams.get('itag');
+        const bitrate = itag ? ITAG_TO_BITRATE[itag] : null;
+        info.stream = {
+          url,
+          bitrate: bitrate ? `${bitrate} kbps` : undefined
+        };
+      }
+      return info;
+    }
+    return this.#doGetPlaybackInfo(videoId, isPrefetch, skipStream, undefined, signal);
+  }
+
+  async #doGetPlaybackInfo(
+    videoId: string,
+    isPrefetch = false,
+    skipStream = false,
     client?: CLIENT,
     signal?: AbortSignal
   ): Promise<VideoPlaybackInfo | null> {
@@ -91,7 +127,7 @@ export default class VideoModel extends BaseModel {
           yt2.getLogger().warn(yt2.getErrorMessage(`[youtube2] Got error in VideoModel.getPlaybackInfo(${videoId}):`, error, false));
           yt2.getLogger().warn(`[youtube2] Going to retry with '${nextClient}' client`)
 
-          return await this.getPlaybackInfo(videoId, isPrefetch, nextClient, signal);
+          return await this.#doGetPlaybackInfo(videoId, isPrefetch, skipStream, nextClient, signal);
         }
         throw error;
       }
@@ -133,7 +169,7 @@ export default class VideoModel extends BaseModel {
       if (!isLive && client === 'WEB') {
         // For non-live videos, WEB client returns SABR streams which Volumio doesn't support.
         // Proceed to the next client.
-        return await this.getPlaybackInfo(videoId, isPrefetch, availableClients[1], signal);
+        return await this.#doGetPlaybackInfo(videoId, isPrefetch, skipStream, availableClients[1], signal);
       }
 
       const result: VideoPlaybackInfo = {
@@ -152,6 +188,10 @@ export default class VideoModel extends BaseModel {
         }
       };
 
+      if (skipStream === true) {
+        return result;
+      }
+      
       if (info.playability_status?.status === 'UNPLAYABLE') {
         // Check if this video has a trailer (non-purchased movies / films)
         if (info.has_trailer) {
@@ -225,7 +265,7 @@ export default class VideoModel extends BaseModel {
     }
     catch (error) {
       yt2.getLogger().error(yt2.getErrorMessage(`[youtube2] Error in VideoModel.getPlaybackInfo(${videoId}): `, error));
-      return null;
+      throw error
     }
   }
 

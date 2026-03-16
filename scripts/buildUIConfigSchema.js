@@ -11,7 +11,7 @@ uiconf.sections.forEach((section) => {
 });
 
 const lines = ['// Auto-generated from ./src/UIConfig.json' + os.EOL];
-lines.push('import { UIConfigButton, UIConfigInput, UIConfigSelect, UIConfigSwitch } from "./UIConfig";')
+lines.push('import type { UIConfigButton, UIConfigInput, UIConfigSelect, UIConfigSwitch } from "./UIConfig";')
 
 lines.push('export type UIConfigSectionKey = ');
 const sectionKeyLines = sectionKeys.map((key) => `              '${key}'`);

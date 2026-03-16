@@ -20,6 +20,7 @@ import YouTube2NowPlayingMetadataProvider from './lib/util/YouTube2NowPlayingMet
 import { Parser } from 'volumio-yt-support/dist/innertube';
 import { existsSync, readFileSync } from 'fs';
 import UIConfigHelper from './config/UIConfigHelper';
+import { YtDlpWrapper } from './lib/util/YtDlp';
 
 interface GotoParams extends QueueItem {
   type: 'album' | 'artist';
@@ -71,6 +72,7 @@ class ControllerYouTube2 implements NowPlayingPluginSupport {
     const browseUIConf = uiconf.section_browse;
     const playbackUIConf = uiconf.section_playback;
     const ytPlaybackModeConf = uiconf.section_yt_playback_mode;
+    const ytDlpUIConf = uiconf.section_yt_dlp;
 
     // Disclaimer
     disclaimerUIConf.content[1].value = hasAcceptedDisclaimer;
@@ -144,6 +146,38 @@ class ControllerYouTube2 implements NowPlayingPluginSupport {
     const ytPlaybackMode = yt2.getConfigValue('ytPlaybackMode');
     ytPlaybackModeConf.content.feedVideos.value = ytPlaybackMode.feedVideos;
     ytPlaybackModeConf.content.playlistVideos.value = ytPlaybackMode.playlistVideos;
+
+    // yt-dlp
+    ytDlpUIConf.content.useYtDlp.value = yt2.getConfigValue('useYtDlp');
+    const ytDlpVersion = yt2.getConfigValue('ytDlpVersion');
+    const ytDlp = YtDlpWrapper.getInstance();
+    const installedYDlpVersions = ytDlp.getInstalled();
+    const ytDlpVersionOptions = installedYDlpVersions.length > 0 ? installedYDlpVersions.map(({version}, i) => ({
+      label: i === 0 ? yt2.getI18n('YOUTUBE2_VERSION_LATEST', version) : version,
+      value: version
+    })) : [{
+      label: yt2.getI18n('YOUTUBE2_NONE_INSTALLED'),
+      value: ''
+    }];
+    const selectedYtDlpVersionOption = (ytDlpVersion && ytDlpVersionOptions.length > 1 ? ytDlpVersionOptions.find(({value}) => value === ytDlpVersion) : null) || ytDlpVersionOptions[0];
+    ytDlpUIConf.content.ytDlpVersion.options = ytDlpVersionOptions;
+    ytDlpUIConf.content.ytDlpVersion.value = selectedYtDlpVersionOption;
+    let latestAvailable;
+    try {
+      latestAvailable = await ytDlp.getLatestVersion();
+    }
+    catch (error: unknown) {
+      yt2.getLogger().error(yt2.getErrorMessage('[youtube2] Failed to get latest yt-dlp version:', error));
+      yt2.toast('error', yt2.getI18n('YOUTUBE2_ERR_GET_LATEST_YT_DLP_VER'));
+      latestAvailable = null;
+    }
+    const latestInstalled = installedYDlpVersions[0]?.version || null;
+    if (latestInstalled && latestAvailable && (new Date(latestAvailable).getTime() - new Date(latestInstalled).getTime() > 0)) {
+      ytDlpUIConf.description = yt2.getI18n('YOUTUBE2_YT_DLP_NEWER_AVAIL', latestAvailable);
+    }
+    if (!latestAvailable || latestInstalled === latestAvailable) {
+      ytDlpUIConf.content.installLatestYtDlp.hidden = true;
+    }
 
     return uiconf;
   }
@@ -319,6 +353,7 @@ class ControllerYouTube2 implements NowPlayingPluginSupport {
       yt2.setConfigValue('activeChannelHandle', activeChannelHandle);
       resetInnertube =  true;
     }
+    YtDlpWrapper.refresh();
     yt2.toast('success', yt2.getI18n('YOUTUBE2_SETTINGS_SAVED'));
     if (resetInnertube) {
       await InnertubeLoader.reset();
@@ -344,6 +379,37 @@ class ControllerYouTube2 implements NowPlayingPluginSupport {
     yt2.toast('success', yt2.getI18n('YOUTUBE2_SETTINGS_SAVED'));
 
     this.#configCheckAutoplay();
+  }
+
+  configSaveYtDlp(data: any) {
+    const useYtDlp = data.useYtDlp;
+    if (useYtDlp) {
+      const installed = YtDlpWrapper.getInstance().getInstalled();
+      if (installed.length === 0) {
+        yt2.toast('error', yt2.getI18n('YOUTUBE2_ERR_USE_YT_DLP_BUT_NONE_INSTALLED'));
+        yt2.setConfigValue('useYtDlp', false);
+        return yt2.refreshUIConfig();
+      }
+    }
+    yt2.setConfigValue('useYtDlp', useYtDlp);
+    const ytDlpVersion = data.ytDlpVersion.value || null;
+    yt2.setConfigValue('ytDlpVersion', ytDlpVersion);
+    yt2.toast('success', yt2.getI18n('YOUTUBE2_SETTINGS_SAVED'));
+  }
+
+  async installLatestYtDlp() {
+    const ytDlp = YtDlpWrapper.getInstance();
+    yt2.toast('info', yt2.getI18n('YOUTUBE2_YT_DLP_INSTALLING'));
+    try {
+      const result = await ytDlp.install();
+      yt2.toast('success', yt2.getI18n('YOUTUBE2_YT_DLP_INSTALLED', result.version));
+      yt2.setConfigValue('ytDlpVersion', result.version);
+      yt2.refreshUIConfig();
+    }
+    catch (error: unknown) {
+      yt2.getLogger().log('error', yt2.getErrorMessage('Error installing yt-dlp:', error));
+      yt2.toast('error', yt2.getErrorMessage('Failed to install yt-dlp:', error, false));
+    }
   }
 
   #configCheckAutoplay() {

@@ -17,7 +17,7 @@ export default class YouTube2NowPlayingMetadataProvider implements NowPlayingMet
     yt2.getLogger().info(`[youtube2] Fetch song info for Now Playing plugin. URI: ${uri}`);
 
     // URI: youtube2/[song/video]@explodeTrackData={...}
-    const { info: playbackInfo } = (uri ? await PlayController.getPlaybackInfoFromUri(uri) : null) || { videoId: null, info: null };
+    const { info: playbackInfo } = (uri ? await PlayController.getPlaybackInfoFromUri(uri, false, true) : null) || { videoId: null, info: null };
     if (!playbackInfo) {
       yt2.getLogger().error('[youtube2] Error fetching song info for Now Playing plugin: no playback info from URI');
       return null;

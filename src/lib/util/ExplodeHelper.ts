@@ -83,7 +83,7 @@ export default class ExplodeHelper {
     // Conversion from pre v1.0
     if (view.name === 'video' && view.videoId) {
       const model = Model.getInstance(ModelType.Video);
-      const playbackInfo = await model.getPlaybackInfo(view.videoId);
+      const playbackInfo = await model.getPlaybackInfo(view.videoId, false, true);
       const videoInfo: any = { ...playbackInfo };
 
       if (playbackInfo) {

@@ -23,7 +23,9 @@ export const PLUGIN_CONFIG_SCHEMA: PluginConfigSchema = {
     playlistVideos: false
   }, json: true},
   cookie: { defaultValue: '', json: false },
-  activeChannelHandle: { defaultValue: '', json: false }
+  activeChannelHandle: { defaultValue: '', json: false },
+  useYtDlp: { defaultValue: false, json: false },
+  ytDlpVersion: { defaultValue: null, json: false }
 };
 
 export default class ConfigModel extends BaseModel {

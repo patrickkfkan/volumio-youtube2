@@ -229,6 +229,7 @@
           "id": "prefetch",
           "element": "switch",
           "label": "TRANSLATE.YOUTUBE2_PREFETCH_NEXT_TRACK",
+          "doc": "TRANSLATE.YOUTUBE2_DOC_PREFETCH",
           "value": true
         }
       ]
@@ -263,6 +264,50 @@
           "element": "switch",
           "label": "TRANSLATE.YOUTUBE2_YT_PLAYBACK_MODE_PLAYLIST_VIDEOS",
           "value": false
+        }
+      ]
+    },
+    {
+      "id": "section_yt_dlp",
+      "element": "section",
+      "label": "TRANSLATE.YOUTUBE2_SECTION_YT_DLP",
+      "icon": "fa-download",
+      "onSave": {
+        "type": "controller",
+        "endpoint": "music_service/youtube2",
+        "method": "configSaveYtDlp"
+      },
+      "saveButton": {
+        "label": "TRANSLATE.YOUTUBE2_SAVE",
+        "data": [
+          "useYtDlp",
+          "ytDlpVersion"
+        ]
+      },
+      "content": [
+        {
+          "id": "useYtDlp",
+          "element": "switch",
+          "label": "TRANSLATE.YOUTUBE2_ENABLE_YT_DLP",
+          "value": false,
+          "doc": "TRANSLATE.YOUTUBE2_DOC_USE_YT_DLP"
+        },
+        {
+          "id": "ytDlpVersion",
+          "element": "select",
+          "label": "TRANSLATE.YOUTUBE2_YT_DLP_VERSION",
+          "options": [],
+          "value": {}
+        },
+        {
+          "id": "installLatestYtDlp",
+          "element": "button",
+          "label": "TRANSLATE.YOUTUBE2_INSTALL_LATEST",
+          "onClick": {
+            "type": "controller",
+            "endpoint": "music_service/youtube2",
+            "method": "installLatestYtDlp"
+          }
         }
       ]
     }

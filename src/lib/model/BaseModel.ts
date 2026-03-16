@@ -5,7 +5,7 @@ export abstract class BaseModel {
 
   protected async getInnertube() {
     return {
-      innertube: await (await InnertubeLoader.getInstance()).getInnertube()
+      innertube: (await InnertubeLoader.getInstance()).getInnertube()
     };
   }
 

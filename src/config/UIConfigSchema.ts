@@ -1,13 +1,14 @@
 // Auto-generated from ./src/UIConfig.json
 
-import { type UIConfigButton, type UIConfigInput, type UIConfigSelect, type UIConfigSwitch } from "./UIConfig";
+import type { UIConfigButton, UIConfigInput, UIConfigSelect, UIConfigSwitch } from "./UIConfig";
 export type UIConfigSectionKey = 
               'section_disclaimer' | 
               'section_i18n' | 
               'section_account' | 
               'section_browse' | 
               'section_playback' | 
-              'section_yt_playback_mode';
+              'section_yt_playback_mode' | 
+              'section_yt_dlp';
 
 export type UIConfigSectionContentKeyOf<K extends UIConfigSectionKey> =
   K extends 'section_disclaimer' ?
@@ -39,6 +40,11 @@ export type UIConfigSectionContentKeyOf<K extends UIConfigSectionKey> =
   K extends 'section_yt_playback_mode' ?
     'feedVideos' | 
     'playlistVideos' :
+
+  K extends 'section_yt_dlp' ?
+    'useYtDlp' | 
+    'ytDlpVersion' | 
+    'installLatestYtDlp' :
 
   never;
 
@@ -82,6 +88,13 @@ export type UIConfigElementOf<K extends UIConfigSectionKey, C extends UIConfigSe
   K extends 'section_yt_playback_mode' ? (
     C extends 'feedVideos' ? UIConfigSwitch<K> :
     C extends 'playlistVideos' ? UIConfigSwitch<K> :
+    never
+  ) : 
+
+  K extends 'section_yt_dlp' ? (
+    C extends 'useYtDlp' ? UIConfigSwitch<K> :
+    C extends 'ytDlpVersion' ? UIConfigSelect<K> :
+    C extends 'installLatestYtDlp' ? UIConfigButton<K> :
     never
   ) : 
 

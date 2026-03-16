@@ -12,5 +12,9 @@ else
     echo "Skipping Deno installation - not supported on ${ARCH}"
 fi
 
+echo "Installing Python..."
+sudo apt update
+sudo apt-get install -y python3
+
 echo "YouTube2 plugin installed"
 echo "plugininstallend"
