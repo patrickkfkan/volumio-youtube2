@@ -75,7 +75,7 @@ class ControllerYouTube2 implements NowPlayingPluginSupport {
     const ytDlpUIConf = uiconf.section_yt_dlp;
 
     // Disclaimer
-    disclaimerUIConf.content[1].value = hasAcceptedDisclaimer;
+    disclaimerUIConf.content.hasAcceptedDisclaimer.value = hasAcceptedDisclaimer;
 
     if (!hasAcceptedDisclaimer) {
       // hasAcceptedDisclaimer is false
@@ -219,8 +219,6 @@ class ControllerYouTube2 implements NowPlayingPluginSupport {
       InnertubeLoader.reset()
         .then(() => yt2.reset())
       );
-
-    return libQ.resolve();
   }
 
   getConfigurationFiles() {
