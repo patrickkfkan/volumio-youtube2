@@ -31,18 +31,20 @@ interface HLSPlaylistVariant {
 
 // Clients:
 // WEB_EMBEDDED now throws "This video is unavailable" error.
-// MWEB and Tv still work.
+// ANDROID_VR, MWEB and TV work, but:
+// - MWEB URLs have a 4-second delay before they become valid;
+// - TV requires sign-in.
 
-// When signed in, prefer TV to MWEB. MWEB streams have a 4-second delay before they
-// become valid.
 const CLIENTS_WHEN_SIGNED_IN = [
   'WEB',
+  'ANDROID_VR',
   'TV',
   'MWEB'
 ] as const;
 
 const CLIENTS_WHEN_SIGNED_IN_AND_PREFETCH = [
   'WEB',
+  'ANDROID_VR',
   'TV'
   // No MWEB here, because of the 4-second delay.
   // This delay coupled with the actual fetch time is enough to screw up
@@ -51,11 +53,17 @@ const CLIENTS_WHEN_SIGNED_IN_AND_PREFETCH = [
 
 const CLIENTS_WHEN_SIGNED_OUT = [
   'WEB',
-  'MWEB',
-  'TV'
+  'ANDROID_VR',
+  'MWEB'
 ] as const;
 
-type CLIENT = 'WEB' | 'MWEB' | 'TV';
+const CLIENTS_WHEN_SIGNED_OUT_AND_PREFETCH = [
+  'WEB',
+  'ANDROID_VR',
+  // No MWEB here, for same reason stated above.
+] as const;
+
+type CLIENT = 'WEB' | 'ANDROID_VR' | 'MWEB' | 'TV';
 
 export default class VideoModel extends BaseModel {
 
@@ -105,11 +113,8 @@ export default class VideoModel extends BaseModel {
     if (innertube.session.logged_in) {
       availableClients = isPrefetch ? CLIENTS_WHEN_SIGNED_IN_AND_PREFETCH : CLIENTS_WHEN_SIGNED_IN;
     }
-    else if (!isPrefetch) {
-      availableClients = CLIENTS_WHEN_SIGNED_OUT;
-    }
     else {
-      throw Error('Prefetch is not supported when signed out');
+      availableClients = isPrefetch ? CLIENTS_WHEN_SIGNED_OUT_AND_PREFETCH : CLIENTS_WHEN_SIGNED_OUT;
     }
     let isLive = false;
     try {
