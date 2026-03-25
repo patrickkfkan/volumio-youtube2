@@ -6,6 +6,9 @@ Credit goes to the [YouTube.js](https://github.com/LuanRT/YouTube.js) project. T
 
 ### Changelog
 
+2.5.1
+- No changes. Version increment to work around Volumio plugin backend issue.
+
 2.5.0
 - Fix stream errors due to YT changes.
 - Add option to use [yt-dlp](https://github.com/yt-dlp/yt-dlp) to fetch streams.
