@@ -34,12 +34,13 @@
 		"volumio": ">=0"
 	},
 	"devDependencies": {
+		"@eslint/js": "^9.39.4",
 		"@types/fs-extra": "^8.1.2",
 		"@types/node": "^20.5.1",
 		"@types/string-format": "^2.0.0",
 		"@typescript-eslint/eslint-plugin": "^8.6.0",
 		"@typescript-eslint/parser": "^8.6.0",
-		"eslint": "^9.10.0",
+		"eslint": "^10.1.0",
 		"eslint-plugin-unused-imports": "^4.1.4",
 		"typescript": "^5.9.3",
 		"typescript-eslint": "^8.18.0",
