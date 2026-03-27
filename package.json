@@ -52,6 +52,6 @@
 		"v-conf": "^1.4.2",
 		"volumio-youtubei.js": "github:patrickkfkan/Volumio-YouTube.js#v1.7.0",
 		"volumio-yt-dlp": "file:dep/volumio-yt-dlp-1.0.0.tgz",
-		"volumio-yt-support": "file:dep/volumio-yt-support-2.1.1.tgz"
+		"volumio-yt-support": "file:dep/volumio-yt-support-2.1.2.tgz"
 	}
 }
