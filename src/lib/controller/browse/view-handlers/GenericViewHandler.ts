@@ -103,6 +103,23 @@ export default class GenericViewHandler<V extends Omit<GenericView, 'name'> & { 
       targetWatchEndpoint = endpoint;
     }
 
+    if (!targetWatchEndpoint && EndpointHelper.isType(endpoint, EndpointType.Watch) && endpoint.payload?.videoId) {
+      // Single video without playlistId (e.g. videos on channel pages, which are parsed as playlists):
+      // play just that video.
+      const videoInfo = await this.getModel(ModelType.Video).getPlaybackInfo(endpoint.payload.videoId, false, true);
+      if (videoInfo) {
+        return ExplodeHelper.getExplodedTrackInfoFromVideo({
+          type: 'video',
+          videoId: endpoint.payload.videoId,
+          title: videoInfo.title || '',
+          author: videoInfo.author?.name ? { channelId: videoInfo.author.channelId, name: videoInfo.author.name } : undefined,
+          thumbnail: videoInfo.thumbnail,
+          duration: videoInfo.duration,
+          endpoint
+        });
+      }
+    }
+
     if (!targetWatchEndpoint) {
       yt2.toast('error', yt2.getI18n('YOUTUBE2_ERR_NO_PLAYABLE_ITEMS_FOUND'));
       throw Error('No playable items found');
