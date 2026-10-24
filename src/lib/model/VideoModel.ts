@@ -192,6 +192,12 @@ export default class VideoModel extends BaseModel {
         }
       };
 
+      if (skipStream === true && !result.title && availableClients.indexOf(client as any) < availableClients.length - 1) {
+        // The client may respond with an error screen (e.g. TV: 'The page needs to be reloaded')
+        // and no video details. Try the next client instead of returning empty metadata.
+        return await __tryNextClientOnError(Error(info.playability_status?.reason || 'No video details'), info);
+      }
+
       if (skipStream === true) {
         return result;
       }
