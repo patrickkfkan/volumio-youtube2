@@ -115,6 +115,11 @@ export default class PlayController {
   #updateTrackWithPlaybackInfo(track: QueueItem, playbackInfo: VideoPlaybackInfo) {
     track.title = playbackInfo.title || track.title;
     track.name = playbackInfo.title || track.title;
+    if (!track.title) {
+      // E.g. channel page videos, whose URI carries no metadata, when playback info has no title either
+      const videoId = ExplodeHelper.getExplodedTrackInfoFromUri(track.uri)?.endpoint?.payload?.videoId;
+      track.title = track.name = videoId ? `YouTube ${videoId}` : 'YouTube';
+    }
     track.artist = playbackInfo.author?.name || track.artist;
     track.albumart = playbackInfo.thumbnail || track.albumart;
     track.duration = playbackInfo.isLive ? 0 : playbackInfo.duration;
@@ -221,7 +226,8 @@ export default class PlayController {
         parameters: [ songId, 'artist', track.artist ]
       });
 
-      return this.#mpdPlugin.sendMpdCommandArray(cmds);
+      // Volumio's MPD lib throws on undefined arguments, which would prevent `play` from being sent
+      return this.#mpdPlugin.sendMpdCommandArray(cmds.filter((cmd) => cmd.parameters[2]));
     }
     return libQ.resolve();
   }
