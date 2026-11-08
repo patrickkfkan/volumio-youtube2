@@ -64,7 +64,83 @@ const CLIENTS_WHEN_SIGNED_OUT_AND_PREFETCH = [
 
 type CLIENT = 'WEB' | 'ANDROID_VR' | 'MWEB' | 'TV';
 
+/* yt-dlp streaming URL cache ----------------------------------------------
+ * yt-dlp can take ~10 s per video on low-power devices (e.g. a Raspberry Pi,
+ * where the JS challenge is solved by node), and
+ * Volumio's prefetch only allows 5 s. URLs are therefore resolved in advance
+ * (`warmYtDlpUrl()`, called when a track starts for the next one in the queue)
+ * and cached until shortly before they expire.
+ */
+const YTDLP_URL_SAFETY_MARGIN_MS = 30 * 60 * 1000; // drop URLs expiring within 30 min
+const YTDLP_URL_DEFAULT_TTL_MS = 3 * 60 * 60 * 1000; // if no `expire` param
+const YTDLP_CACHE_MAX = 50;
+const ytDlpUrlCache = new Map<string, { url: string; expiresAt: number }>();
+const ytDlpInFlight = new Map<string, Promise<string>>();
+
+function getUrlExpiry(url: string) {
+  try {
+    const expire = Number(new URL(url.split('\n')[0]).searchParams.get('expire'));
+    if (expire > 0) {
+      return expire * 1000;
+    }
+  }
+  catch (_error: unknown) {
+    // Ignore
+  }
+  return Date.now() + YTDLP_URL_DEFAULT_TTL_MS;
+}
+
 export default class VideoModel extends BaseModel {
+
+  static getCachedYtDlpUrl(videoId: string): string | null {
+    const entry = ytDlpUrlCache.get(videoId);
+    if (entry && entry.expiresAt - YTDLP_URL_SAFETY_MARGIN_MS > Date.now()) {
+      return entry.url;
+    }
+    ytDlpUrlCache.delete(videoId);
+    return null;
+  }
+
+  /** Cached URL, else the in-flight resolution, else a new yt-dlp run. */
+  static getYtDlpUrl(videoId: string): Promise<string> {
+    const cached = this.getCachedYtDlpUrl(videoId);
+    if (cached) {
+      yt2.getLogger().info(`[youtube2] [yt-dlp] Using cached streaming URL for ${videoId}`);
+      return Promise.resolve(cached);
+    }
+    const inFlight = ytDlpInFlight.get(videoId);
+    if (inFlight) {
+      yt2.getLogger().info(`[youtube2] [yt-dlp] Waiting for in-progress resolution of ${videoId}`);
+      return inFlight;
+    }
+    const startedAt = Date.now();
+    const promise = YtDlpWrapper.getInstance().getStreamingUrl(
+      `https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`,
+      yt2.getConfigValue('ytDlpVersion') ?? undefined
+    ).then((url: string) => {
+      ytDlpUrlCache.set(videoId, { url, expiresAt: getUrlExpiry(url) });
+      while (ytDlpUrlCache.size > YTDLP_CACHE_MAX) {
+        ytDlpUrlCache.delete(ytDlpUrlCache.keys().next().value as string);
+      }
+      yt2.getLogger().info(`[youtube2] [yt-dlp] Resolved ${videoId} in ${Date.now() - startedAt} ms`);
+      return url;
+    }).finally(() => {
+      ytDlpInFlight.delete(videoId);
+    });
+    ytDlpInFlight.set(videoId, promise);
+    return promise;
+  }
+
+  /** Resolves the URL in the background (errors are only logged). */
+  static warmYtDlpUrl(videoId: string) {
+    if (!yt2.getConfigValue('useYtDlp') || this.getCachedYtDlpUrl(videoId) || ytDlpInFlight.has(videoId)) {
+      return;
+    }
+    yt2.getLogger().info(`[youtube2] [yt-dlp] Pre-resolving streaming URL for ${videoId}`);
+    this.getYtDlpUrl(videoId).catch((error: unknown) => {
+      yt2.getLogger().warn(yt2.getErrorMessage(`[youtube2] [yt-dlp] Pre-resolution failed for ${videoId}:`, error, false));
+    });
+  }
 
   async getPlaybackInfo(
     videoId: string,
@@ -73,16 +149,15 @@ export default class VideoModel extends BaseModel {
     signal?: AbortSignal
   ) {
     const useYtDlp = yt2.getConfigValue('useYtDlp');
-    if (useYtDlp && isPrefetch) {
+    /* yt-dlp URL cache: prefetch is possible when the URL was resolved in advance */
+    if (useYtDlp && isPrefetch && !skipStream && !VideoModel.getCachedYtDlpUrl(videoId)) {
       throw Error(`Cannot prefetch with yt-dlp as time taken will exceed Volumio's limit`);
     }
     if (!skipStream && useYtDlp) {
       const [info, url] = await Promise.all([
-        this.#doGetPlaybackInfo(videoId, isPrefetch, true, undefined, signal),
-        YtDlpWrapper.getInstance().getStreamingUrl(
-          `https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`,
-          yt2.getConfigValue('ytDlpVersion') ?? undefined
-        ).catch((error: unknown) => {
+        // Metadata only (no stream): use the regular client list even when prefetching
+        this.#doGetPlaybackInfo(videoId, false, true, undefined, signal),
+        VideoModel.getYtDlpUrl(videoId).catch((error: unknown) => {
           yt2.getLogger().error(yt2.getErrorMessage('Failed to get streaming URL with yt-dlp:', error, false));
           return null;
         })

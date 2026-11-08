@@ -4,6 +4,7 @@ import libQ from 'kew';
 
 import yt2 from '../../YouTube2Context';
 import Model, { ModelType } from '../../model';
+import VideoModel from '../../model/VideoModel';
 import { EndpointType, type WatchEndpoint } from '../../types/Endpoint';
 import { kewToJSPromise } from '../../util';
 import { type ExplodedTrackInfo } from '../browse/view-handlers/ExplodableViewHandler';
@@ -104,6 +105,7 @@ export default class PlayController {
 
     const safeStreamUrl = stream.url.replace(/"/g, '\\"');
     await this.#doPlay(safeStreamUrl, track);
+    this.#warmNextTrack(track);
 
     if (yt2.getConfigValue('addToHistory')) {
       playbackInfo.addToHistory().catch((error: unknown) => {
@@ -403,6 +405,7 @@ export default class PlayController {
       }
       this.#updateTrackWithPlaybackInfo(track, playbackInfo);
       yt2.getStateMachine().prefetchDone = true;
+      this.#warmNextTrack(track);
     }
     catch (error: any) {
       if (signal.aborted) {
@@ -427,6 +430,40 @@ export default class PlayController {
     this.#prefetchPlaybackStateFixer?.notifyPrefetched(track);
 
     return res;
+  }
+
+  /**
+   * Resolves in the background the yt-dlp streaming URL of the
+   * YouTube track following `track` in the queue, so that it starts (or can be
+   * prefetched) without the ~10 s yt-dlp delay.
+   */
+  #warmNextTrack(track: QueueItem) {
+    try {
+      const sm = yt2.getStateMachine();
+      if (!yt2.getConfigValue('useYtDlp') || sm.currentRandom) {
+        return;
+      }
+      const queue: QueueItem[] = sm.getQueue?.() || [];
+      const from = Math.max(0, Number(sm.currentPosition) || 0);
+      let index = queue.findIndex((item, i) => i >= from && item?.uri === track.uri);
+      if (index < 0) {
+        index = queue.findIndex((item) => item?.uri === track.uri);
+      }
+      let next = index >= 0 ? queue[index + 1] : undefined;
+      if (!next && index === queue.length - 1 && sm.currentRepeat) {
+        next = queue[0];
+      }
+      if (next?.service !== 'youtube2') {
+        return;
+      }
+      const videoId = ExplodeHelper.getExplodedTrackInfoFromUri(next.uri)?.endpoint?.payload?.videoId;
+      if (videoId) {
+        VideoModel.warmYtDlpUrl(videoId);
+      }
+    }
+    catch (error: unknown) {
+      yt2.getLogger().warn(yt2.getErrorMessage('[youtube2-play] Could not pre-resolve next track:', error, false));
+    }
   }
 
   #cancelPrefetch() {
