@@ -83,5 +83,13 @@
   "YOUTUBE2_ERR_ACCEPT_DISCLAIMER_PLAY": "Playback denied. You need to go to YouTube2 plugin settings and accept the Disclaimer first.",
   "YOUTUBE2_ERR_GET_LATEST_YT_DLP_VER": "Failed to get latest yt-dlp version",
   "YOUTUBE2_ERR_INStALLING_YT_DLP": "Error installing yt-dlp: {}",
-  "YOUTUBE2_ERR_USE_YT_DLP_BUT_NONE_INSTALLED": "Configured to use yt-dlp, but none installed."
+  "YOUTUBE2_ERR_USE_YT_DLP_BUT_NONE_INSTALLED": "Configured to use yt-dlp, but none installed.",
+  "YOUTUBE2_MIX_FROM_CURRENT": "Mix: {}",
+  "YOUTUBE2_MIX_NO_CURRENT": "Mix of current track (no YouTube track playing)",
+  "YOUTUBE2_MIX_TRACKS": "{} tracks",
+  "YOUTUBE2_MIX_SAVE": "Save as playlist \"{}\"",
+  "YOUTUBE2_MIX_SAVED": "{} tracks added to playlist \"{}\" ({} already present)",
+  "YOUTUBE2_ERR_MIX_NO_CURRENT": "No YouTube track is currently playing",
+  "YOUTUBE2_ERR_MIX_NOT_FOUND": "No Mix found for this video",
+  "YOUTUBE2_ERR_MIX_SAVE": "Could not save playlist \"{}\""
 }

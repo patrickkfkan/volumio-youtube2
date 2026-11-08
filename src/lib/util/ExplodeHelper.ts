@@ -60,6 +60,9 @@ export default class ExplodeHelper {
       case 'generic':
         return view.endpoint && typeof view.endpoint === 'object';
 
+      case 'mix': // Mix of a video, or of the current track
+        return true;
+
       default:
         return false;
     }
