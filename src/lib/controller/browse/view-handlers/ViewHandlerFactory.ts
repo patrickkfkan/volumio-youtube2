@@ -1,6 +1,7 @@
 
 import type BaseViewHandler from './BaseViewHandler';
 import GenericViewHandler from './GenericViewHandler';
+import MixViewHandler from './MixViewHandler';
 import OptionSelectionViewHandler from './OptionSelectionViewHandler';
 import PlaylistViewHandler from './PlaylistViewHandler';
 import RootViewHandler from './RootViewHandler';
@@ -20,7 +21,8 @@ const VIEW_NAME_TO_CLASS: Record<string, HandlerClass<any, any>> = {
   'playlist': PlaylistViewHandler,
   'optionSelection': OptionSelectionViewHandler,
   'search': SearchViewHandler,
-  'subscriptions': SubscriptionsViewHandler
+  'subscriptions': SubscriptionsViewHandler,
+  'mix': MixViewHandler
 };
 
 export default class ViewHandlerFactory {
